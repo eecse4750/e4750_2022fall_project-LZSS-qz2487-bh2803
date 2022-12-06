@@ -15,50 +15,93 @@ class PrefixSum:
         self.getSourceModule()
 
     def getSourceModule(self):
-        kernelwrapper_inef = r"""
-        __global__ void work_scan(float *X, float *Y, float *S, unsigned int InputSize){
-            const unsigned int SECTION_SIZE = 1024;
+        typedef = r"""
+        typedef struct en_str_t
+            {
+                int offset;     /* offset addr to start of longest match */
+                int length;     /* length of longest match */
+            } en_str_t;
+        """
 
-            __shared__ float XY[SECTION_SIZE];
+        kw_matchfunc = r"""
+        __device__ en_str_t StringMatch(
+            unsigned char *StrWindow, //Sliding Window String
+            unsigned char *StrAhead,  //Uncoded LookAhead String
+            unsigned short lenWindow, //Length of sliding window
+            unsigned short lenAhead,  //length of uncoded lookahead String
+            unsigned int WindowStart; //Start point of sliding window
+            unsigned int UncodedStart;//Start point of uncoded lookahead
+            unsigned int *MatchInd,
+            unsigned int lastcheck,
+            unsigned int tx,){
+                /*Match Info Initialization*/
+                en_str_t Match;
+                Match.offset = 1;
+                Match.length = 1;
 
-            int i = blockIdx.x * blockDim.x + threadIdx.x;
+                bool isMatch = false;
 
-            //Write data to SECTION in each block
-            if (i < InputSize) {XY[threadIdx.x] = X[i];}else{XY[threadIdx.x]=0;}
+                int maxcheck;
+                maxcheck = MAX_CODED - tx * lastcheck;
 
-            //Scan Main Body
-            __syncthreads();
-            for (unsigned int stride = 1; stride <= blockDim.x; stride *= 2){
-                if(threadIdx.x >= stride){
-                    float in;
-                    in = XY[threadIdx.x - stride];
-                    __syncthreads();
-                    XY[threadIdx.x] += in;
-                    __syncthreads();
+                int loop_i = 0;
+                int tmp = 0;
+                int i = WindowStart; // index of sliding window string
+                int j = 0; // index of Lookahead string
+
+                /*Main Loop to get offset and length of matching string*/
+                while (loop_i < WINDOWSIZE){
+
+                    /*Indicate if win[i] and lookahead are matching*/
+                    if (StrWindow[i] == StrAhead[(UncodedStart + j)%(WINDOWSIZE + MAX_CODED)]){
+                        j++; //add to index of lookahead 
+                        isMatch = true; //indicate string is matching
+                    }
+                    else{
+                        // what if the previous one still match but j is bigger than length of matching part
+                        if (isMatch && j > Match.length){
+                            Match.length = j;
+                            tmp = i - j; 
+                            if (tmp < 0)
+                                tmp += WINDOWSIZE+MAX_CODED;
+                            Match.offset = tmp;
+                        }
+
+                        j = 0;
+                        isMatch = false;
+
+                    }
+
+                    i = (i + 1)%(WINDOWSIZE + MAX_CODED);
+                    loop_i ++;
+
+                    if (loop >= maxcheck - 1){
+                        loop = WINDOWSIZE;//Stop the loop
+                    }
+
                 }
-                
-            }
 
-            //Write data to Output
-            if (i < InputSize) {Y[i] = XY[threadIdx.x];}
-            
+                if (j > Match.length && isMatch){
+                    Match.length = j;
+                    tmp = i - j;
 
-            if (threadIdx.x == blockDim.x - 1){
-                S[blockIdx.x] = XY[SECTION_SIZE - 1];
-                //printf("%f\n",S[blockIdx.x]);
-            }
-            
+                    if (tmp < 0)
+                        tmp += WINDOWSIZE + MAX_CODED;
+
+                    Match.offset = tmp;
+                }
+
+                return Match
         }
         """
 
 
 
-        self.module_eff = SourceModule(kernelprinter_ef + kernelwrapper_scan_S + kernelwrapper_output + kernelwrapper_ef)
-        self.module_ineff = SourceModule(kernelprinter_inef + kernelwrapper_scan_S + kernelwrapper_output + kernelwrapper_inef)
+        self.module_eff = SourceModule()
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
-    def prefix_sum_python(self,input_list,length):
+    def CPU_Compress(self,input_list,length):
         # implement this, note you can change the function signature (arguments and return type)
         start = cuda.Event()
         end = cuda.Event()
@@ -69,7 +112,7 @@ class PrefixSum:
         t = start.time_till(end)
         return res,t
 
-    def prefix_sum_gpu_work_inefficient(self,input_list,length):
+    def GPU_Compress(self,input_list,length):
         # implement this, note you can change the function signature (arguments and return type)
         SECTION_SIZE = 1024
         #Event objects to indicate starts and ends
