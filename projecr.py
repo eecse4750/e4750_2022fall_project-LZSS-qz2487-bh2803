@@ -8,7 +8,7 @@ import pycuda.autoinit
 
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(suppress=True)
-class PrefixSum:
+class LZSS:
     def __init__(self):
         # Use this space to define the thread dimensions if required, or it can be incorporated into main function
         # You can also define a lambda function to compute grid dimensions if required.
@@ -34,6 +34,7 @@ class PrefixSum:
             unsigned int *MatchInd,
             unsigned int lastcheck,
             unsigned int tx,){
+
                 /*Match Info Initialization*/
                 en_str_t Match;
                 Match.offset = 1;
