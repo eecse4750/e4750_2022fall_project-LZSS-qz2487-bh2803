@@ -27,13 +27,10 @@ class LZSS:
         __device__ en_str_t StringMatch(
             unsigned char *StrWindow, //Sliding Window String
             unsigned char *StrAhead,  //Uncoded LookAhead String
-            unsigned short lenWindow, //Length of sliding window
-            unsigned short lenAhead,  //length of uncoded lookahead String
             unsigned int WindowStart; //Start point of sliding window
             unsigned int UncodedStart;//Start point of uncoded lookahead
-            unsigned int *MatchInd,
             unsigned int lastcheck,
-            unsigned int tx,){
+            unsigned int tx){
 
                 /*Match Info Initialization*/
                 en_str_t Match;
@@ -96,9 +93,179 @@ class LZSS:
         }
         """
 
+        kw_kernel_encode = r"""
+            __global__ void EncodeLZSS (unsigned char *in, unsigned char *out, int SIZE){
+                __shared__ unsigned char SlidingWindow[WINDOWSIZE+MAX_CODED];
+                __shared__ unsigned char LookAhead[MAX_CODED * 2];
+                __shared__ unsigned char encodedData[MAX_CODED * 2];
+
+                en_str_t mactchstring;
+
+                #initialize parameters
+                int WindowStart, UncodedStart;
+                int readPosition;
+                int position_W;
+                int position_R;
+                int LoadCounter;
+                int bx = blockIdx.x;
+                int tx = threadIdx.x;
+
+                SlidingWindow[tx] = '';
+                WindowStart = tx;
+                UncodedStart = tx;
+                position_R = 0;
+                position_W = 0;
+                lastCheck = 0;
+                LoadCounter = 0;
+
+                #Synchronize after writing to shared memory
+                __syncthreads();
+
+                #Copy data from input
+                LookAhead[tx] = in[bx * PCKTSIZE + tx];
+                position_R += MAX_CODED;
+
+                SlidingWindow[(WindowStart + WINDOWSIZE) % (WINDOW_SIZE + MAX_CODED)] = LookAhead[UncodedStart];
+
+                __syncthreads();
+
+                LookAhead[MAX_CODED + tx] = in[bx * PCKSIZE + tx];
+                position_R += MAX_CODED;
+
+                __syncthreads();
+
+                LoadCounter++;
 
 
-        self.module_eff = SourceModule()
+                //Look for match string
+                matchstring = StringMatch(
+                    SlidingWindow, //Sliding Window String
+                    LookAhead,  //Uncoded LookAhead String
+                    WindowStart; //Start point of sliding window
+                    UncodedStart;//Start point of uncoded lookahead
+                    0,
+                    tx);
+
+                __syncthreads();
+
+                // now encoded the rest of the file until an EOF is read //
+                while ((position_R) <= PCKTSIZE && !lastcheck)
+                {		
+                
+                    
+                    
+                    if (matchstring.length >= MAX_CODED)
+                        {
+                                // garbage beyond last data happened to extend match length //
+                                matchstring.length = MAX_CODED-1;
+                        }
+
+                    if (matchstring.length <= MAX_UNCODED)
+                    {
+                        // not long enough match.  write uncoded byte //
+                        matchstring.length = 1;   // set to 1 for 1 byte uncoded //
+                        encodedData[tx*2] = 1;
+                        encodedData[tx*2 + 1] = uncodedLookahead[uncodedHead];
+                    }
+                    else if(matchstring.length > MAX_UNCODED)
+                    {	
+                        // match length > MAX_UNCODED.  Encode as offset and length. //
+                        encodedData[tx*2] = (unsigned char)matchstring.length;
+                        encodedData[tx*2+1] = (unsigned char)matchstring.offset;			
+                    }
+
+                        
+                    //write out the encoded data into output
+                    out_d[bx * PCKTSIZE*2 + position_W + tx*2] = encodedData[tx*2];
+                    out_d[bx * PCKTSIZE*2 + position_W + tx*2 + 1] = encodedData[tx*2+1];
+                    
+                    //update written pointer and heads
+                    position_W = position_W + MAX_CODED*2;
+                    
+                    windowHead = (windowHead + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
+                    uncodedHead = (uncodedHead + MAX_CODED) % (MAX_CODED*2);
+                    
+                    __syncthreads(); 	
+
+                            
+                    //if(lastcheck==1)
+                    //{
+                    //	break;			
+                    //}	
+                    
+                    //if(!lastcheck)
+                    {
+                        if(position_R<PCKTSIZE){
+                            //uncodedLookahead[(uncodedHead+ MAX_CODED)% (MAX_CODED*2)] = tex1Dfetch(in_d_tex, bx * PCKTSIZE + position_R + tx);
+                            uncodedLookahead[(uncodedHead+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + position_R + tx];
+                            position_R+=MAX_CODED;
+                            
+                            //find the location for the thread specific view of window
+                            slidingWindow[ (windowHead + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[uncodedHead];
+                            //__syncthreads(); 	
+                        }
+                        else{
+                            lastcheck++;				
+                            slidingWindow[(windowHead + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
+                        }
+                        __syncthreads(); 	
+                        
+                        loadcounter++;
+                        matchstring = FindMatch(windowHead, uncodedHead,slidingWindow,uncodedLookahead,tx,bx, position_W, lastcheck,loadcounter);
+                    }
+                    
+                } //while
+                
+                    if(lastcheck==1)
+                    {
+                        if(matchstring.length > (MAX_CODED - tx))
+                            matchstring.length = MAX_CODED - tx;
+                    }
+                    
+                    if (matchstring.length >= MAX_CODED)
+                        {
+                            // garbage beyond last data happened to extend match length //
+                            matchstring.length = MAX_CODED-1;
+                        }
+
+                    if (matchstring.length <= MAX_UNCODED)
+                    {
+                        // not long enough match.  write uncoded byte //
+                        matchstring.length = 1;   // set to 1 for 1 byte uncoded //
+                        encodedData[tx*2] = 1;
+                        encodedData[tx*2 + 1] = uncodedLookahead[uncodedHead];
+                    }
+                    else if(matchstring.length > MAX_UNCODED)
+                    {	
+                        // match length > MAX_UNCODED.  Encode as offset and length. //
+                        encodedData[tx*2] = (unsigned char)matchstring.length;
+                        encodedData[tx*2+1] = (unsigned char)matchstring.offset;			
+                    }
+
+                        
+                    //write out the encoded data into output
+                    out_d[bx * PCKTSIZE*2 + position_W + tx*2] = encodedData[tx*2];
+                    out_d[bx * PCKTSIZE*2 + position_W + tx*2 + 1] = encodedData[tx*2+1];
+                    
+                    //update written pointer and heads
+                    position_W = position_W + MAX_CODED*2;
+                    
+                    windowHead = (windowHead + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
+                    uncodedHead = (uncodedHead + MAX_CODED) % (MAX_CODED*2);
+                    
+            }
+
+
+
+
+
+
+            }
+        """
+
+
+
+        self.module_eff = SourceModule(typedef+kw_matchfunc+kw_kernel_encode)
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
@@ -107,7 +274,7 @@ class LZSS:
         start = cuda.Event()
         end = cuda.Event()
         start.record()
-        res = np.cumsum(input_list,dtype=float)
+        # TODO: CPU function implementation
         end.record()
         cuda.Context.synchronize()
         t = start.time_till(end)
@@ -248,27 +415,8 @@ class LZSS:
 
         return Y,t
 
-    def test_prefix_sum_python(self):
-        # implement this, note you can change the function signature (arguments and return type)
-        test_list_1 = np.array([1,2,3,4,5])
-        test_list_2 = np.array([3,1,7,0,4])
-        test_result_1 = np.array([1,3,6,10,15])
-        test_result_2 = np.array([3,4,11,11,15])
-        result_1 = self.prefix_sum_python(test_list_1)
-        result_2 = self.prefix_sum_python(test_list_2)
-        if (np.allclose(result_1,test_result_1) and np.allclose(result_2,test_result_2)):
-            print("CPU RESULT TEST PASSED")
-        else:
-            raise Exception("TEST FAILED")
 
-    def test_prefix_sum_gpu_work_inefficient(self,input_list,length):
-        # implement this, note you can change the function signature (arguments and return type)
-        
-        pass
 
-    def test_prefix_sum_gpu_work_efficient(self,input_list,length):
-        # implement this, note you can change the function signature (arguments and return type)
-        pass
 
 if __name__ == "__main__":
     #Main Code
