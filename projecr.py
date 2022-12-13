@@ -15,12 +15,33 @@ class LZSS:
         self.getSourceModule()
 
     def getSourceModule(self):
+        kw_constant = r"""
+
+        
+        
+        #define MAX_UNCODED     2
+        #define MAX_CODED       128
+        #define WINDOW_SIZE      128
+        #define PCKTSIZE        4096
+
+
+        """
+
+
+
         typedef = r"""
         typedef struct en_str_t
             {
                 int offset;     /* offset addr to start of longest match */
                 int length;     /* length of longest match */
             } en_str_t;
+
+        typedef struct de_string_t
+            {
+                int offset;     /* offset to start of longest match */
+                int length;     /* length of longest match */
+            } de_string_t;
+        
         """
 
         kw_matchfunc = r"""
@@ -48,10 +69,10 @@ class LZSS:
                 int j = 0; // index of Lookahead string
 
                 /*Main Loop to get offset and length of matching string*/
-                while (loop_i < WINDOWSIZE){
+                while (loop_i < WINDOW_SIZE){
 
                     /*Indicate if win[i] and lookahead are matching*/
-                    if (StrWindow[i] == StrAhead[(UncodedStart + j)%(WINDOWSIZE + MAX_CODED)]){
+                    if (StrWindow[i] == StrAhead[(UncodedStart + j)%(WINDOW_SIZE + MAX_CODED)]){
                         j++; //add to index of lookahead 
                         isMatch = true; //indicate string is matching
                     }
@@ -61,7 +82,7 @@ class LZSS:
                             Match.length = j;
                             tmp = i - j; 
                             if (tmp < 0)
-                                tmp += WINDOWSIZE+MAX_CODED;
+                                tmp += WINDOW_SIZE+MAX_CODED;
                             Match.offset = tmp;
                         }
 
@@ -70,11 +91,11 @@ class LZSS:
 
                     }
 
-                    i = (i + 1)%(WINDOWSIZE + MAX_CODED);
+                    i = (i + 1)%(WINDOW_SIZE + MAX_CODED);
                     loop_i ++;
 
                     if (loop >= maxcheck - 1){
-                        loop = WINDOWSIZE;//Stop the loop
+                        loop = WINDOW_SIZE;//Stop the loop
                     }
 
                 }
@@ -84,7 +105,7 @@ class LZSS:
                     tmp = i - j;
 
                     if (tmp < 0)
-                        tmp += WINDOWSIZE + MAX_CODED;
+                        tmp += WINDOW_SIZE + MAX_CODED;
 
                     Match.offset = tmp;
                 }
@@ -95,7 +116,7 @@ class LZSS:
 
         kw_kernel_encode = r"""
             __global__ void EncodeLZSS (unsigned char *in, unsigned char *out, int SIZE){
-                __shared__ unsigned char SlidingWindow[WINDOWSIZE+MAX_CODED];
+                __shared__ unsigned char SlidingWindow[WINDOW_SIZE+MAX_CODED];
                 __shared__ unsigned char LookAhead[MAX_CODED * 2];
                 __shared__ unsigned char encodedData[MAX_CODED * 2];
 
@@ -125,7 +146,7 @@ class LZSS:
                 LookAhead[tx] = in[bx * PCKTSIZE + tx];
                 position_R += MAX_CODED;
 
-                SlidingWindow[(WindowStart + WINDOWSIZE) % (WINDOW_SIZE + MAX_CODED)] = LookAhead[UncodedStart];
+                SlidingWindow[(WindowStart + WINDOW_SIZE) % (WINDOW_SIZE + MAX_CODED)] = LookAhead[UncodedStart];
 
                 __syncthreads();
 
@@ -216,26 +237,26 @@ class LZSS:
                     
                 } //while
                 
-                    if(lastcheck==1)
+                if(lastcheck==1)
                     {
                         if(matchstring.length > (MAX_CODED - tx))
                             matchstring.length = MAX_CODED - tx;
                     }
                     
-                    if (matchstring.length >= MAX_CODED)
-                        {
-                            // garbage beyond last data happened to extend match length //
-                            matchstring.length = MAX_CODED-1;
-                        }
+                if (matchstring.length >= MAX_CODED)
+                    {
+                        // garbage beyond last data happened to extend match length //
+                        matchstring.length = MAX_CODED-1;
+                    }
 
-                    if (matchstring.length <= MAX_UNCODED)
+                if (matchstring.length <= MAX_UNCODED)
                     {
                         // not long enough match.  write uncoded byte //
                         matchstring.length = 1;   // set to 1 for 1 byte uncoded //
                         encodedData[tx*2] = 1;
                         encodedData[tx*2 + 1] = uncodedLookahead[uncodedHead];
                     }
-                    else if(matchstring.length > MAX_UNCODED)
+                else if(matchstring.length > MAX_UNCODED)
                     {	
                         // match length > MAX_UNCODED.  Encode as offset and length. //
                         encodedData[tx*2] = (unsigned char)matchstring.length;
@@ -243,33 +264,155 @@ class LZSS:
                     }
 
                         
-                    //write out the encoded data into output
-                    out_d[bx * PCKTSIZE*2 + position_W + tx*2] = encodedData[tx*2];
-                    out_d[bx * PCKTSIZE*2 + position_W + tx*2 + 1] = encodedData[tx*2+1];
-                    
-                    //update written pointer and heads
-                    position_W = position_W + MAX_CODED*2;
-                    
-                    windowHead = (windowHead + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
-                    uncodedHead = (uncodedHead + MAX_CODED) % (MAX_CODED*2);
+                //write out the encoded data into output
+                out_d[bx * PCKTSIZE*2 + position_W + tx*2] = encodedData[tx*2];
+                out_d[bx * PCKTSIZE*2 + position_W + tx*2 + 1] = encodedData[tx*2+1];
+                
+                //update written pointer and heads
+                position_W = position_W + MAX_CODED*2;
+                
+                windowHead = (windowHead + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
+                uncodedHead = (uncodedHead + MAX_CODED) % (MAX_CODED*2);
                     
             }
-
-
-
-
-
 
             }
         """
+        kw_kernel_decode = r'''
+    __global__ void DecodeKernel(unsigned char * in_d, unsigned char * out_d, int * error_d, int * sizearr_d, int SIZEBLOCK)
+    {
+
+        // cyclic buffer sliding window of already read characters //
+        unsigned char slidingWindow[WINDOW_SIZE];
+        unsigned char uncodedLookahead[MAX_CODED];
+        //unsigned char writebuf[8];
+        
+        int nextChar;                       /* next char in sliding window */
+        de_string_t code;              /* offset/length code for string */
+
+        // 8 code flags and encoded strings //
+        unsigned char flags, flagsUsed;
+        //int nextEncoded;                // index into encodedData //
+        //de_string_t matchData;
+        int i, c;
+
+        //initialize variables
+        flags = 0;
+        flagsUsed = 7;
+        nextChar = 0;
+        
+        //long lSize=PCKTSIZE;
+        int filepoint=0;
+        int wfilepoint=0;
+
+        int bx = blockIdx.x;
+        int tx = threadIdx.x; 
+        
+        int sizeinpckt = 0, startadd = 0;
+        startadd = sizearr_d[bx * SIZEBLOCK + tx]; //read the size of the packet
+        sizeinpckt = sizearr_d[bx * SIZEBLOCK + tx + 1] -  startadd;
+    
+        //bigger than a packet hold-compression took more space for that packet
+        //REPORT 
+        if(sizeinpckt > PCKTSIZE){
+            (*error_d)++;
+        }
+
+        // ************************************************************************
+        //* Fill the sliding window buffer with some known vales.  EncodeLZSS must
+        //* use the same values.  If common characters are used, there's an
+        //* increased chance of matching to the earlier strings.
+        //************************************************************************ /
+        for (i = 0; i < WINDOW_SIZE; i++)
+        {
+            slidingWindow[i] = ' ';
+        }
+
+        while (TRUE)
+            {
+                flags >>= 1;
+                flagsUsed++;
+
+                if (flagsUsed == 8)
+                {
+                    // shifted out all the flag bits, read a new flag //
+                    if (filepoint >= sizeinpckt)
+                    {
+                        break;
+                    }
+                    c=in_d[startadd + filepoint]; //packet*PCKTSIZE 
+                    filepoint++;
+                    flags = c & 0xFF;
+                    flagsUsed = 0;
+                }
+
+                if (flags & 0x01)
+                {
+                    // uncoded character //
+                    if (filepoint >= sizeinpckt)
+                    {
+                        break;
+                    }
+                    
+                    // write out byte and put it in sliding window //
+                    out_d[bx * SIZEBLOCK * PCKTSIZE + tx*PCKTSIZE+wfilepoint]=in_d[startadd +filepoint];
+                    wfilepoint++;
+                    slidingWindow[nextChar] = in_d[startadd +filepoint];
+                    nextChar = (nextChar + 1) % WINDOW_SIZE;
+                    filepoint++;
+                }
+                else 
+                {
+                    // offset and length //
+                    if (filepoint >= sizeinpckt)
+                    {
+                        break;
+                    }
+                    code.length=in_d[startadd +filepoint];
+                    filepoint++;
+
+                    if (filepoint >= sizeinpckt)
+                    {
+                        break;
+                    }
+                    code.offset =in_d[startadd +filepoint];
+                    filepoint++;
+                    
+                    // ****************************************************************
+                    //* Write out decoded string to file and lookahead.  It would be
+                    //* nice to write to the sliding window instead of the lookahead,
+                    ////* but we could end up overwriting the matching string with the
+                    ///* new string if abs(offset - next char) < match length.
+                    //**************************************************************** /
+                    for (i = 0; i < code.length; i++)
+                    {
+                        c = slidingWindow[(code.offset + i) % WINDOW_SIZE];
+                        out_d[bx * SIZEBLOCK * PCKTSIZE + tx*PCKTSIZE + wfilepoint]=c;
+                        wfilepoint++;
+                        uncodedLookahead[i] = c;
+                    }
+
+                    // write out decoded string to sliding window //
+                    for (i = 0; i < code.length; i++)
+                    {
+                        slidingWindow[(nextChar + i) % WINDOW_SIZE] =
+                            uncodedLookahead[i];
+                    }
+
+                    nextChar = (nextChar + code.length) % WINDOW_SIZE;
+                }
+            }
+            
+    }
+            '''
 
 
-
-        self.module_eff = SourceModule(typedef+kw_matchfunc+kw_kernel_encode)
+        self.module_encode = SourceModule(kw_constant+typedef+kw_matchfunc+kw_kernel_encode)
+        self.module_decode = SourceModule(kw_constant+typedef+kw_kernel_decode)
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
-    def CPU_Compress(self,input_list,length):
+    def CPU_Compress(self,input):
         # implement this, note you can change the function signature (arguments and return type)
         start = cuda.Event()
         end = cuda.Event()
