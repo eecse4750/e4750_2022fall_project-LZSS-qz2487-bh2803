@@ -493,9 +493,11 @@ if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('wordlist.txt','r') as f:
+    with open('wordlist.txt','r',encoding='utf-8') as f:
         content = f.read()
-    file_arr_r = np.array(content)
+    file_list_r = [*content]
+    file_arr_r = np.array(file_list_r).astype(bytes)
+    print(file_arr_r[:10])
     #Open write file
     w_f = open('result.txt','w')
 
@@ -520,8 +522,8 @@ if __name__ == "__main__":
     #run
     result,t = PS.GPU_Compress(file_arr_r,np.intc(10000))
 
-    print(result.shape)
-    w_f.write(np.array2string(result))
+    print(result[:10])
+    #w_f.write(np.array2string(result))
     f.close()
     w_f.close()
 
