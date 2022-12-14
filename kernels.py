@@ -283,7 +283,7 @@ __global__ void EncodeKernel(unsigned char * in_d, unsigned char * out_d, unsign
 '''
 
 
-ke_kernel_decode = r'''
+kw_kernel_decode = r'''
 __global__ void DecodeKernel(unsigned char * in_d, unsigned char * out_d, int * error_d, int * sizearr_d, int SIZEBLOCK)
     {
 
