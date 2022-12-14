@@ -1,17 +1,16 @@
 
-TEST = False
+TEST = True
+DEBUG_LEVEL = 0
+import testnum
+import shpt
 
 class LZSSC:
     ENCODING = "utf-8"
-    MAX_WINDOW_SIZE = 128
+    MAX_WINDOW_SIZE = 4096
     ENCODED_FLAG = 0b1
 
     def __init__(self):
         pass
-
-    def compress2(self, inData):
-        inBytes = inData.encode(self.ENCODING)
-        print(inBytes)
 
     def compress(self, inStr):
 
@@ -35,8 +34,9 @@ class LZSSC:
 
         # in data is string
         inBytes = inStr.encode(self.ENCODING)
-        print("Input Bytes:\n",inBytes)
-        print("Input Bytes Type:\n",type(inBytes[0]))
+        if(DEBUG_LEVEL > 0):
+            print("Input Bytes:\n",inBytes)
+            print("Input Bytes Type:\n",type(inBytes[0]))
 
         searchBuf = []
         checkBuf = []
@@ -45,10 +45,12 @@ class LZSSC:
         i=0
         for char in inBytes:
             index = elements_in_array(checkBuf, searchBuf)
-            print("\n\t->|",char,type(char),i)
+            if(DEBUG_LEVEL > 0):
+                print("\n\t->|",char,type(char),i)
 
             if elements_in_array(checkBuf + [char], searchBuf) == -1 or i == len(inBytes) - 1:
-                print("\t\t >_< End of Match")
+                if(DEBUG_LEVEL > 0):
+                    print("\t\t >_< End of Match")
                 
                 if i == len(inBytes) - 1 and elements_in_array(checkBuf + [char], searchBuf) != -1:
                     checkBuf.append(char)
@@ -61,16 +63,19 @@ class LZSSC:
                     token = f"~{offset},{length}"
 
                     if len(token) > length:
-                        print("\n\t\tAdd Literal:", checkBuf)
+                        if(DEBUG_LEVEL > 0):
+                            print("\n\t\tAdd Literal:", checkBuf)
                         output.extend(checkBuf)
                     else:
-                        print("\n\t\tAdd Token:", token.encode(self.ENCODING))
+                        if(DEBUG_LEVEL > 0):
+                            print("\n\t\tAdd Token:", token.encode(self.ENCODING))
                         output.extend(token.encode(self.ENCODING))
 
                     searchBuf.extend(checkBuf)
                 else:
                     output.extend(checkBuf)
-                    print("\t\tAdd Literal",output, "<-", checkBuf)
+                    if(DEBUG_LEVEL > 0):
+                        print("\t\tAdd Literal",output, "<-", checkBuf)
                     searchBuf.extend(checkBuf)
 
                 checkBuf = []
@@ -101,10 +106,16 @@ if TEST:
     I DO NOT LIKE GREEN EGGS AND HAM.
     '''
 
-   # teststr = "abcdef abcdef12"
+    #teststr = "abcdef abcdef12"
+    #teststr = testnum.teststr
+    teststr = shpt.shpt
 
     encoder = LZSSC()
     out = encoder.compress(teststr)
     print("\n= = = = = = = = = =\n")
     print(out)
+
+    
+    print("\n= = = = = = = = = =\n")
+    print("Input Size: %d\t\tOutput Size: %d\n"%(len(teststr), len(out)))
 
