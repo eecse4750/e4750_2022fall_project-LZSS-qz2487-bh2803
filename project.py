@@ -1,4 +1,5 @@
 import numpy as np
+from io import BytesIO
 import pycuda
 import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
@@ -20,8 +21,8 @@ class LZSS:
         
         
         #define MAX_UNCODED     2
-        #define MAX_CODED       128
-        #define WINDOW_SIZE     128
+        #define MAX_CODED       512
+        #define WINDOW_SIZE     512
         #define PCKTSIZE        4096
         #define TRUE            1
         #define FALSE           0
@@ -471,8 +472,8 @@ class LZSS:
         prg = self.module_encode.get_function("EncodeKernel")
 
         #Set block and grid size
-        block = (128,1,1)
-        grid = (int(np.ceil(length/128)),1,1)
+        block = (512,1,1)
+        grid = (int(np.ceil(length/512)),1,1)
 
 
         #Run func
@@ -493,13 +494,14 @@ if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('wordlist.txt','r',encoding='utf-8') as f:
+    with open('gistfile1.txt','r',encoding='utf-8') as f:
+    #with open('wordlist.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
-    print(file_arr_r[:10])
+    #print(file_arr_r)
     #Open write file
-    w_f = open('result.txt','w')
+    w_f = open('result.txt','wb')
 
 
     # Create an instance of the CudaModule class
@@ -521,9 +523,12 @@ if __name__ == "__main__":
 
     #run
     result,t = PS.GPU_Compress(file_arr_r,np.intc(10000))
-
-    print(result[:10])
-    #w_f.write(np.array2string(result))
+    #result = result.astype('<U1')
+    #res = "".join(result)
+    #print(result)
+    for elem in result:
+        elem = bytes(elem)
+        w_f.write(elem)
     f.close()
     w_f.close()
 
