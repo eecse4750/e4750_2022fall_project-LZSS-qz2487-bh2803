@@ -1,5 +1,6 @@
 
-# Contains strings of kernel code
+# This file contains strings of kernel code
+# Imported and used in main Python file
 
 kw_constant = r'''
 #define MAX_UNCODED     2
