@@ -21,8 +21,8 @@ class LZSS:
         
         
         #define MAX_UNCODED     2
-        #define MAX_CODED       512
-        #define WINDOW_SIZE     512
+        #define MAX_CODED       128
+        #define WINDOW_SIZE     128
         #define PCKTSIZE        4096
         #define TRUE            1
         #define FALSE           0
@@ -124,7 +124,7 @@ class LZSS:
         """
 
         kw_kernel_encode = r"""
-        __global__ void EncodeKernel(unsigned char * in_d, unsigned char * out_d, unsigned int SIZEBLOCK)
+        __global__ void EncodeKernel(unsigned char * in_d, unsigned char * out_d)
         {
 
 
@@ -289,6 +289,7 @@ class LZSS:
 
                     
                 //write out the encoded data into output
+
                 out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedData[tx*2];
                 out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedData[tx*2+1];
                 //printf("%c",encodedData[tx*2]);
@@ -303,136 +304,35 @@ class LZSS:
         }
                 """
         kw_kernel_decode = r'''
-    __global__ void DecodeKernel(unsigned char * in_d, unsigned char * out_d, int * error_d, int * sizearr_d, int SIZEBLOCK)
-    {
-
-        // cyclic buffer sliding window of already read characters //
-        unsigned char slidingWindow[WINDOW_SIZE];
-        unsigned char uncodedLookahead[MAX_CODED];
-        //unsigned char writebuf[8];
-
-        int nextChar;                       /* next char in sliding window */
-        de_string_t code;              /* offset/length code for string */
-
-        // 8 code flags and encoded strings //
-        unsigned char flags, flagsUsed;
-        //int nextEncoded;                // index into encodedData //
-        //de_string_t matchData;
-        int i, c;
-
-        //initialize variables
-        flags = 0;
-        flagsUsed = 7;
-        nextChar = 0;
-
-        //long lSize=PCKTSIZE;
-        int filepoint=0;
-        int wfilepoint=0;
-
-        int bx = blockIdx.x;
-        int tx = threadIdx.x; 
+    __global__ void DecodeKernel(unsigned char * in_d, unsigned char * out_d)
+    {   __shared__ int step;
+        step = 0;
+        __syncthreads();
         
-        int sizeinpckt = 0, startadd = 0;
-        startadd = sizearr_d[bx * SIZEBLOCK + tx]; //read the size of the packet
-        sizeinpckt = sizearr_d[bx * SIZEBLOCK + tx + 1] -  startadd;
-
-        //bigger than a packet hold-compression took more space for that packet
-        //REPORT 
-        if(sizeinpckt > PCKTSIZE){
-            (*error_d)++;
+        int tx = blockIdx.x*blockDim.x+threadIdx.x;
+        if (in_d[2*tx]==1){
+            out_d[tx+step] = in_d[2*tx+1];
+            
+            __syncthreads();
         }
-
-        // ************************************************************************
-        //* Fill the sliding window buffer with some known vales.  EncodeLZSS must
-        //* use the same values.  If common characters are used, there's an
-        //* increased chance of matching to the earlier strings.
-        //************************************************************************ /
-        for (i = 0; i < WINDOW_SIZE; i++)
-        {
-            slidingWindow[i] = ' ';
+        else{
+            out_d[tx+step] = '<';
+            out_d[tx+1+step] = in_d[2*tx+1];
+            out_d[tx+2+step] = ',';
+            out_d[tx+3+step] = in_d[2*tx];
+            out_d[tx+4+step] = '>';
+            step += 4;
+            __syncthreads();
         }
+        
 
-        while (TRUE)
-            {
-                flags >>= 1;
-                flagsUsed++;
-
-                if (flagsUsed == 8)
-                {
-                    // shifted out all the flag bits, read a new flag //
-                    if (filepoint >= sizeinpckt)
-                    {
-                        break;
-                    }
-                    c=in_d[startadd + filepoint]; //packet*PCKTSIZE 
-                    filepoint++;
-                    flags = c & 0xFF;
-                    flagsUsed = 0;
-                }
-
-                if (flags & 0x01)
-                {
-                    // uncoded character //
-                    if (filepoint >= sizeinpckt)
-                    {
-                        break;
-                    }
-                    
-                    // write out byte and put it in sliding window //
-                    out_d[bx * SIZEBLOCK * PCKTSIZE + tx*PCKTSIZE+wfilepoint]=in_d[startadd +filepoint];
-                    wfilepoint++;
-                    slidingWindow[nextChar] = in_d[startadd +filepoint];
-                    nextChar = (nextChar + 1) % WINDOW_SIZE;
-                    filepoint++;
-                }
-                else 
-                {
-                    // offset and length //
-                    if (filepoint >= sizeinpckt)
-                    {
-                        break;
-                    }
-                    code.length=in_d[startadd +filepoint];
-                    filepoint++;
-
-                    if (filepoint >= sizeinpckt)
-                    {
-                        break;
-                    }
-                    code.offset =in_d[startadd +filepoint];
-                    filepoint++;
-                    
-                    // ****************************************************************
-                    //* Write out decoded string to file and lookahead.  It would be
-                    //* nice to write to the sliding window instead of the lookahead,
-                    ////* but we could end up overwriting the matching string with the
-                    ///* new string if abs(offset - next char) < match length.
-                    //**************************************************************** /
-                    for (i = 0; i < code.length; i++)
-                    {
-                        c = slidingWindow[(code.offset + i) % WINDOW_SIZE];
-                        out_d[bx * SIZEBLOCK * PCKTSIZE + tx*PCKTSIZE + wfilepoint]=c;
-                        wfilepoint++;
-                        uncodedLookahead[i] = c;
-                    }
-
-                    // write out decoded string to sliding window //
-                    for (i = 0; i < code.length; i++)
-                    {
-                        slidingWindow[(nextChar + i) % WINDOW_SIZE] =
-                            uncodedLookahead[i];
-                    }
-
-                    nextChar = (nextChar + code.length) % WINDOW_SIZE;
-                }
-            }
             
     }
             '''
 
 
-        self.module_encode = SourceModule(kw_constant+typedef+kw_matchfunc+kw_kernel_encode)
-        self.module_decode = SourceModule(kw_constant+typedef+kw_kernel_decode)
+        self.module_encode = SourceModule(kw_constant+typedef+kw_matchfunc+kw_kernel_encode+kw_kernel_decode)
+
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
@@ -449,39 +349,40 @@ class LZSS:
         return res,t
 
     def GPU_Compress(self,input_string,length):
-        # implement this, note you can change the function signature (arguments and return type)
-        SECTION_SIZE = 1024
         #Event objects to indicate starts and ends
         start = cuda.Event()
         end = cuda.Event()
 
         #initial list
         X = input_string
-        Y = np.zeros_like(X)
+        Y = np.append(np.zeros_like(X),np.zeros_like(X))
+        Z = np.zeros_like(Y)
 
         #memory allocate
         X_gpu = cuda.mem_alloc(X.size * X.dtype.itemsize)
         Y_gpu = cuda.mem_alloc(Y.size * Y.dtype.itemsize)
+        Z_gpu = cuda.mem_alloc(Z.size * Z.dtype.itemsize)
 
+        #Call Kernel Func
+        prg1 = self.module_encode.get_function("EncodeKernel")
+        prg2 = self.module_encode.get_function("DecodeKernel")
 
         #memory transfer
         start.record()
         cuda.memcpy_htod(X_gpu,X)
-        
-        #Call Kernel Func
-        prg = self.module_encode.get_function("EncodeKernel")
 
         #Set block and grid size
-        block = (512,1,1)
-        grid = (int(np.ceil(length/512)),1,1)
+        block = (128,1,1)
+        grid = (256,1,1)
 
 
         #Run func
-        prg(X_gpu,Y_gpu,length,block=block,grid=grid)
+        prg1(X_gpu,Y_gpu,block=block,grid=grid)
+        prg2(Y_gpu,Z_gpu,block=block,grid=grid)
 
 
         #Copy Back
-        cuda.memcpy_dtoh(Y,Y_gpu)
+        cuda.memcpy_dtoh(Z,Z_gpu)
 
         end.record()
         #cuda.Context.synchronize()
@@ -494,12 +395,12 @@ if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('gistfile1.txt','r',encoding='utf-8') as f:
+    with open('big.txt','r',encoding='utf-8') as f:
     #with open('wordlist.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
-    #print(file_arr_r)
+    print(file_arr_r.shape)
     #Open write file
     w_f = open('result.txt','wb')
 
@@ -522,10 +423,10 @@ if __name__ == "__main__":
     total_gpu_time = np.array([])
 
     #run
-    result,t = PS.GPU_Compress(file_arr_r,np.intc(10000))
+    result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
     #result = result.astype('<U1')
     #res = "".join(result)
-    #print(result)
+    print(result[:10])
     for elem in result:
         elem = bytes(elem)
         w_f.write(elem)
