@@ -315,8 +315,8 @@ class LZSS:
         //For instance: 0b00111100 
 
         //encodingFLAG = 0x00000000;
-        int tx = threadIdx.x;
-        int bx = blockIdx.x; 
+        //int tx = threadIdx.x;
+        //int bx = blockIdx.x; 
         int idx = blockIdx.x*blockDim.x + threadIdx.x;//blockDim : 32*1*1
 
         if (in_d[2*idx]==1){
@@ -360,16 +360,16 @@ class LZSS:
         #initial list
         X = input_string
         Y = np.append(np.zeros_like(X),np.zeros_like(X))
-        Z = np.zeros_like(Y)
+        #Z = np.zeros_like(Y)
 
         #memory allocate
         X_gpu = cuda.mem_alloc(X.size * X.dtype.itemsize)
         Y_gpu = cuda.mem_alloc(Y.size * Y.dtype.itemsize)
-        Z_gpu = cuda.mem_alloc(Z.size * Z.dtype.itemsize)
+        #Z_gpu = cuda.mem_alloc(Z.size * Z.dtype.itemsize)
 
         #Call Kernel Func
         prg1 = self.module_encode.get_function("EncodeKernel")
-        prg2 = self.module_encode.get_function("DecodeKernel")
+        #prg2 = self.module_encode.get_function("DecodeKernel")
 
         #memory transfer
         start.record()
@@ -377,34 +377,60 @@ class LZSS:
 
         #Set block and grid size
         block = (128,1,1)
-        grid = (256,1,1)
+        grid = (int(np.ceil(length/128/32)),1,1)
 
 
         #Run func
         prg1(X_gpu,Y_gpu,block=block,grid=grid)
-        prg2(Y_gpu,Z_gpu,block=block,grid=grid)
-
+        #prg2(Y_gpu,Z_gpu,block=block,grid=grid)
 
         #Copy Back
-        cuda.memcpy_dtoh(Z,Z_gpu)
+        cuda.memcpy_dtoh(Y,Y_gpu)
+        out = self.CPU_GPU(Y)
+        
 
         end.record()
         #cuda.Context.synchronize()
         #t = start.time_till(end)
         t=0;
-        return Y,t
+        return out,t
+    
+    def CPU_GPU(self,input):
+        length = int(len(input)/2)-1
+        out = []
+        step = 0
+        print(len(input))
+        
+        #print(input[:223])
+
+        for i in range(length):
+            if (input[i*2] != b''):
+                if (input[i*2] == b'\x01'):
+                    out.append(input[2*i+1])
+                    #print(input[2*i+1])
+                else:
+                    #print(1)
+                    #temp =  str(int.from_bytes(input[2*i+1], "big"))  + str(int.from_bytes(input[2*i], "big"))
+                    #print(type(temp))
+                    out.append(input[2*i+1])
+                    out.append(input[2*i])
+
+                    #step += 4
+        #print(input)
+        return out
 
 
 if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('big.txt','r',encoding='utf-8') as f:
+    with open('wordlist.txt','r',encoding='utf-8') as f:
     #with open('wordlist.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
-    #print(file_arr_r.shape)
+    print(file_arr_r)
+    print(file_arr_r.shape)
     #Open write file
     w_f = open('result.txt','wb')
 
@@ -430,7 +456,8 @@ if __name__ == "__main__":
     result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
     #result = result.astype('<U1')
     #res = "".join(result)
-    #print(result[:10])
+    print(result)
+    print(len(result))
     for elem in result:
         elem = bytes(elem)
         w_f.write(elem)
