@@ -210,9 +210,10 @@ class LZSS:
                     encodedData[tx*2 + 1] = uncodedLookahead[uncodedHead];
                 }
                 else if(matchData.length > MAX_UNCODED)
-                {	
+                {	//printf("%d\n",matchData.offset);
                     // match length > MAX_UNCODED.  Encode as offset and length. //
                     encodedData[tx*2] = (unsigned char)matchData.length;
+                    
                     encodedData[tx*2+1] = (unsigned char)matchData.offset;			
                 }
 
@@ -305,24 +306,27 @@ class LZSS:
                 """
         kw_kernel_decode = r'''
     __global__ void DecodeKernel(unsigned char * in_d, unsigned char * out_d)
-    {   __shared__ int step;
-        step = 0;
-        __syncthreads();
-        
-        int tx = blockIdx.x*blockDim.x+threadIdx.x;
-        if (in_d[2*tx]==1){
-            out_d[tx+step] = in_d[2*tx+1];
+    {   //unsigned int encodingFLAG;
+        //__shared__ unsigned char buffer[32];
+
+        //Take 32 bytes at a time.
+        //Use 0 to indicate this is original data
+        //Use 1 to indicate this is pointer data
+        //For instance: 0b00111100 
+
+        //encodingFLAG = 0x00000000;
+        int tx = threadIdx.x;
+        int bx = blockIdx.x; 
+        int idx = blockIdx.x*blockDim.x + threadIdx.x;//blockDim : 32*1*1
+
+        if (in_d[2*idx]==1){
+            out_d[idx] = in_d[2*idx+1];
             
-            __syncthreads();
         }
         else{
-            out_d[tx+step] = '<';
-            out_d[tx+1+step] = in_d[2*tx+1];
-            out_d[tx+2+step] = ',';
-            out_d[tx+3+step] = in_d[2*tx];
-            out_d[tx+4+step] = '>';
-            step += 4;
-            __syncthreads();
+            out_d[idx] = in_d[2*idx+1];
+            out_d[idx+1] = in_d[2*idx];
+
         }
         
 
