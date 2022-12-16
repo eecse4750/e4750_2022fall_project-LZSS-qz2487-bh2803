@@ -3,9 +3,8 @@ kw_constant = r'''
 // Window size is how far back each pattern tries to match
 // Lookahead is also length of maximum match
 #define WINDOW_SIZE 256
-#define LOOKAHEAD_SIZE 255
+#define LOOKAHEAD_SIZE 256
 #define MIN_MATCH 4
-
 
 '''
 

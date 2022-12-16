@@ -113,7 +113,8 @@ class LZSS:
         '''
         #step += 4
         #print(input)
-        return out
+        #return out
+        return input
 
 
 if __name__ == "__main__":
