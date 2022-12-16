@@ -9,7 +9,7 @@ import scipy.signal as scisg
 import pycuda.autoinit
 
 # Local Modules
-import kernels
+import kernels.old
 
 DEBUG = True;
 np.set_printoptions(threshold=np.inf)
