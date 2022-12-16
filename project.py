@@ -62,7 +62,7 @@ class LZSS:
         #Z_gpu = cuda.mem_alloc(Z.size * Z.dtype.itemsize)
 
         #Call Kernel Func
-        prg1 = self.module_encode.get_function("EncodeKernel")
+        prg1 = self.module_encode.get_function("kw_encode")
         #prg2 = self.module_encode.get_function("DecodeKernel")
 
         #memory transfer
@@ -93,10 +93,10 @@ class LZSS:
         length = int(len(input)/2)-1
         out = []
         step = 0
-        print(len(input))
+        #print(input)
         
-        #print(input[:223])
-
+        print(input[:100])
+        '''
         for i in range(length):
             if (input[i*2] != b''):
                 if (input[i*2] == b'\x01'):
@@ -108,8 +108,8 @@ class LZSS:
                     #print(type(temp))
                     out.append(input[2*i+1])
                     out.append(input[2*i])
-
-                    #step += 4
+        '''
+        #step += 4
         #print(input)
         return out
 
@@ -118,13 +118,13 @@ if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('wordlist.txt','r',encoding='utf-8') as f:
+    with open('gistfile1.txt','r',encoding='utf-8') as f:
     #with open('wordlist.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
-    print(file_arr_r)
-    print(file_arr_r.shape)
+    print(file_arr_r[:100])
+    #print(file_arr_r.shape)
     #Open write file
     w_f = open('result.txt','wb')
 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
     #result = result.astype('<U1')
     #res = "".join(result)
-    print(result)
+    #print(result[:100])
     print(len(result))
     for elem in result:
         elem = bytes(elem)
