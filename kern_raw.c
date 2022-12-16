@@ -33,10 +33,13 @@ __global__ void kw_encode(char* input, char* output, int input_size) {
 
     // Index for this thread's initial location in shared memory
     int sharedBase = WINDOW_SIZE + threadIdx.x;
+    char startChar = in_s[sharedBase];
 
     int bestMatchLength = 0;
     int bestMatchOffset = 0;
     int cMatchLen = 0;
+
+    
 
     for (int i = 0; i < WINDOW_SIZE; i++) {
         __syncthreads();
@@ -47,7 +50,7 @@ __global__ void kw_encode(char* input, char* output, int input_size) {
         if(curWindowChar == curLookaheadChar){
             cMatchLen += 1;                                     // Matched
         }else{
-            if(curWindowChar == in_s[sharedBase]){              // Reset cMatch
+            if(curWindowChar == startChar){              // Reset cMatch
                 cMatchLen = 1;                                  
             }else{
                 cMatchLen = 0;
