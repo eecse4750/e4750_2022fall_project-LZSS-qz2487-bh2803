@@ -11,6 +11,7 @@ import pycuda.autoinit
 # Local Modules
 import kernels
 
+DEBUG = True;
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(suppress=True)
 class LZSS:
@@ -94,8 +95,9 @@ class LZSS:
         out = []
         step = 0
         #print(input)
-        
-        print(input[:100])
+        if (DEBUG):
+            print("Uncoded Result:")
+            print(input[:100])
         '''
         for i in range(length):
             if (input[i*2] != b''):
@@ -119,12 +121,16 @@ if __name__ == "__main__":
 
     #Open Test file
     with open('gistfile1.txt','r',encoding='utf-8') as f:
-    #with open('wordlist.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
-    print(file_arr_r[:50])
-    #print(file_arr_r.shape)
+
+    if(DEBUG):
+        print("First 50 elements:")
+        print(file_arr_r[:50])
+        print("Input Shape")
+        print(file_arr_r.shape)
+
     #Open write file
     w_f = open('result.txt','wb')
 
@@ -151,7 +157,13 @@ if __name__ == "__main__":
     #result = result.astype('<U1')
     #res = "".join(result)
     #print(result[:100])
-    print(len(result))
+
+    if(DEBUG):
+        print("Coded Result")
+        #print(result[:100])
+        print("Shape of Result:")
+        print(len(result))
+
     for elem in result:
         elem = bytes(elem)
         w_f.write(elem)
