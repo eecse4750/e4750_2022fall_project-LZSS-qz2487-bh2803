@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     if(DEBUG):
         print("Coded Result")
-        #print(result[:100])
+        print(result[:100])
         print("Shape of Result:")
         print(len(result))
 
