@@ -2,7 +2,7 @@
 // Window size is how far back each pattern tries to match
 // Lookahead is also length of maximum match
 #define WINDOW_SIZE 1024
-#define LOOKAHEAD_SIZE 512
+#define LOOKAHEAD_SIZE 255
 #define MIN_MATCH 4
 
 /*
