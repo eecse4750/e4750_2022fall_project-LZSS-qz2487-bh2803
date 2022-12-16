@@ -9,7 +9,7 @@ import scipy.signal as scisg
 import pycuda.autoinit
 
 # Local Modules
-import kernels.old
+import kernels_old as kernels
 
 DEBUG = True;
 np.set_printoptions(threshold=np.inf)
@@ -63,8 +63,8 @@ class LZSS:
         #Z_gpu = cuda.mem_alloc(Z.size * Z.dtype.itemsize)
 
         #Call Kernel Func
-        prg1 = self.module_encode.get_function("kw_encode")
-        #prg2 = self.module_encode.get_function("DecodeKernel")
+        #prg1 = self.module_encode.get_function("kw_encode")
+        prg1 = self.module_encode.get_function("EncodeKernel")
 
         #memory transfer
         start.record()
@@ -81,7 +81,7 @@ class LZSS:
 
         #Copy Back
         cuda.memcpy_dtoh(Y,Y_gpu)
-        out = self.CPU_GPU(Y)
+        out = self.Compress(Y)
         
 
         end.record()
@@ -90,38 +90,41 @@ class LZSS:
         t=0;
         return out,t
     
-    def CPU_GPU(self,input):
-        length = int(len(input)/2)-1
+    def Compress(self,input):
+        length = int(len(input)/2)
         out = []
         step = 0
         #print(input)
         if (DEBUG):
-            print("Uncoded Result:")
+            print("Uncompressed Result:")
             print(input[:100])
-        '''
-        for i in range(length):
+            print()
+        i = 0;
+        while i < length:
+            #print(i)
             if (input[i*2] != b''):
                 if (input[i*2] == b'\x01'):
                     out.append(input[2*i+1])
                     #print(input[2*i+1])
                 else:
-                    #print(1)
-                    #temp =  str(int.from_bytes(input[2*i+1], "big"))  + str(int.from_bytes(input[2*i], "big"))
-                    #print(type(temp))
-                    out.append(input[2*i+1])
-                    out.append(input[2*i])
-        '''
+                    offset = input[2*i+1]
+                    Maxlength = input[2*i]
+                    i += ord(Maxlength)
+                    out.append(bytes(Maxlength))
+                    out.append(offset)
+            i += 1
+        
         #step += 4
         #print(input)
         #return out
-        return input
+        return out
 
 
 if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('gistfile1.txt','r',encoding='utf-8') as f:
+    with open('big.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
@@ -160,7 +163,7 @@ if __name__ == "__main__":
     #print(result[:100])
 
     if(DEBUG):
-        print("Coded Result")
+        print("Compressed Result")
         print(result[:100])
         print("Shape of Result:")
         print(len(result))
