@@ -123,7 +123,7 @@ if __name__ == "__main__":
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
-    print(file_arr_r[:100])
+    print(file_arr_r[:50])
     #print(file_arr_r.shape)
     #Open write file
     w_f = open('result.txt','wb')

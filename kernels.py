@@ -2,7 +2,7 @@
 kw_constant = r'''
 // Window size is how far back each pattern tries to match
 // Lookahead is also length of maximum match
-#define WINDOW_SIZE 1024
+#define WINDOW_SIZE 256
 #define LOOKAHEAD_SIZE 255
 #define MIN_MATCH 4
 
@@ -57,7 +57,7 @@ __global__ void kw_encode(char* input, char* output, int input_size) {
         // See if pattern continues to match
         char curWindowChar = in_s[threadIdx.x + i];             // From search window
         char curLookaheadChar = in_s[sharedBase + cMatchLen];   // From lookahead
-        
+        __syncthreads();
         if(curWindowChar == curLookaheadChar){
             cMatchLen += 1;                                     // Matched
         }else{
