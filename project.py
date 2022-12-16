@@ -124,7 +124,7 @@ if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('big.txt','r',encoding='utf-8') as f:
+    with open('gistfile1.txt','r',encoding='utf-8') as f:
         content = f.read()
     file_list_r = [*content]
     file_arr_r = np.array(file_list_r).astype(bytes)
@@ -158,9 +158,6 @@ if __name__ == "__main__":
 
     #run
     result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
-    #result = result.astype('<U1')
-    #res = "".join(result)
-    #print(result[:100])
 
     if(DEBUG):
         print("Compressed Result")
