@@ -47,5 +47,5 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 3. ``result`` folder contains the result bin files which are not able to be opened. It can be decoded back to original file with proper implementation.
 4. ``iamge`` folder returns the image file we produced during execution.
 ## Plots with our test
-![image text][(/e4750_2022fall_project-lzss/image/RunningTime_canterbury.jpg)](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/RunningTime_canterbury.jpg)
-![image text][([/e4750_2022fall_project-lzss/image/CompressionRatio_canterbury_with_naive.jpg](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/CompressionRatio_canterbury_with_naive.jpg))](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/CompressionRatio_canterbury_with_naive.jpg)
+![image](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/RunningTime_canterbury.jpg)
+![image](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/CompressionRatio_canterbury_with_naive.jpg)
