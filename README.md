@@ -1,4 +1,4 @@
-# e4750_2022Fall_Project
+# e4750_2022Fall_Project_LZSS_qz2487_bh2803
 This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our topic is LZSS parallel compression. We use a parallel implementation of LZSS algorithm to comrpess data.
 
 ## File Organization
@@ -39,7 +39,7 @@ run ``python project.py`` to test random number file with different sizes
 run ``python project.py -d`` to test different kinds of files
 You can also add ``-a`` like ``python project.py -a`` to give a test on random number files with extra naive CPU test.
 
-&ensp;Note: Naive implementation is very slow since it has dynamic array.
+&ensp;&ensp;&ensp;&ensp;**Note**: Naive implementation is very slow since it has dynamic array.
 
 3. The project code has to be submitted inside this repository 
 
