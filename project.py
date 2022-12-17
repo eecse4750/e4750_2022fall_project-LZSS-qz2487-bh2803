@@ -13,7 +13,7 @@ import LZSSCPU
 # Local Modules
 import kernels_old as kernels
 
-DEBUG = True
+DEBUG = False
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(suppress=True)
 class LZSS:
@@ -139,11 +139,16 @@ class LZSS:
 if __name__ == "__main__":
     #Filenames
     filenames = ['wordlist.txt','gistfile1.txt','big.txt']
-    for filename in filenames:
+    #Operations
+    operations = ['gpu','cpu','naive']
+
+
+    for p,filename in enumerate(filenames):
         with open(filename,'r',encoding='utf-8') as f:
             content = f.read()
         file_list_r = [*content]
         file_arr_r = np.array(file_list_r).astype(bytes)
+        input_len = len(file_arr_r)
 
         if(DEBUG):
             print("First 50 elements:")
@@ -152,28 +157,55 @@ if __name__ == "__main__":
             print(file_arr_r.shape)
 
         #Open write file
-        w_f = open('result.txt','wb')
+        w_f = open('result_{:s}.txt'.format(filename),'wb')
 
 
         # Create an instance of the CudaModule class
         PS = LZSS()
 
-        #Initialize the arrays take times:
-        avg_total_cpu_time = np.array([])
-        avg_total_inef_time = np.array([])
-        avg_total_ef_time = np.array([])
-
-        #Nested loops:
-        #InputDimensions->Iterations->Methods
-        print("Testing Started!")
+        print("Testing Started For File: %s" %filename)
         print("----------------")
 
-        #Initialize the running time array
-        total_cpu_time = np.array([])
-        total_gpu_time = np.array([])
+        #Compression Ratio array
+        cpu_ratio = np.array([])
+        gpu_ratio = np.array([])
+        naive_ratio = np.array([])
+
+        #Initialize the arrays take times:
+        cpu_time = np.array([])
+        gpu_time = np.array([])
+        naive_time = np.array([])
 
         #run
-        result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
+        for operation in operations:
+            if (operation == 'cpu'):
+                result,t = PS.CPU_Compress_lzss(file_arr_r,len(file_arr_r))
+                res_len = len(result)
+                ratio = res_len/input_len
+                cpu_ratio = np.append(cpu_ratio,ratio)
+                cpu_time = np.append(cpu_time,t)
+                print("CPU running time for file(%s): %f"%(filename,t))
+                print("Compression Ratio: %.4f"%ratio)
+
+
+            else:
+                if (operation == 'gpu'):
+                    result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
+                    res_len = len(result)
+                    ratio = res_len/input_len
+                    gpu_ratio = np.append(gpu_ratio,ratio)
+                    gpu_time = np.append(gpu_time,t)
+                    print("GPU running time for file(%s): %f"%(filename,t))
+                    print("Compression Ratio: %.4f"%ratio)
+                else:
+                    result,t = PS.CPU_Compress_naive(file_arr_r,len(file_arr_r))
+                    res_len = len(result)
+                    ratio = res_len/input_len
+                    print("CPU Naive running time for file(%s): %f"%(filename,t))
+                    print("Compression Ratio: %.4f"%ratio)
+
+        print("Testing Finished For file %s" %filename)
+        print("----------------")
 
         if(DEBUG):
             print("Compressed Result")
