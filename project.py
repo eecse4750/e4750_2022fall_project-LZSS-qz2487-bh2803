@@ -313,7 +313,7 @@ if __name__ == "__main__":
             ax.set_yscale('log')
             ax.set_ylabel("Time(ms)") 
             ax.set_title('Running Time for Rdm Num Files')
-            plt.savefig('RunningTime.jpg')
+            plt.savefig('./image/RunningTime.jpg')
             #Ratio
             fig2 = plt.figure(2)
             ax2 = fig2.add_subplot(111)
@@ -329,7 +329,7 @@ if __name__ == "__main__":
             ax2.set_xlabel("Size(bit)")
             ax2.set_ylim(0,1)
             ax2.set_title('Compression Ratio for Rdm Num Files')
-            plt.savefig('CompressionRatio.jpg')
+            plt.savefig('./image/CompressionRatio.jpg')
         else:
             #Running Time
             fig = plt.figure(1,figsize=(8,8))
@@ -344,7 +344,7 @@ if __name__ == "__main__":
             ax.set_yscale('log')
             ax.set_ylabel("Time(ms)") 
             ax.set_title('Running Time for Canterbury files')
-            plt.savefig('RunningTime_canterbury.jpg')
+            plt.savefig('./image/RunningTime_canterbury.jpg')
 
             #Ratio
             x = np.arange(8)
@@ -367,9 +367,9 @@ if __name__ == "__main__":
             #ax2.set_ylim(0,1)
             ax2.set_title('Compression Ratio for canterbury files')
             if(NAIVE_ACTIVE):
-                plt.savefig('CompressionRatio_canterbury_with_naive.jpg')
+                plt.savefig('./image/CompressionRatio_canterbury_with_naive.jpg')
             else:
-                plt.savefig('CompressionRatio_canterbury.jpg')
+                plt.savefig('./image/CompressionRatio_canterbury.jpg')
 
 
 
