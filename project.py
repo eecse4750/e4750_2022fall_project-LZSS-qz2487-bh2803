@@ -98,8 +98,9 @@ class LZSS:
 
         #Copy Back
         cuda.memcpy_dtoh(Y,Y_gpu)
-        end.record()
         out = self.Compress(Y)
+        end.record()
+        
         cuda.Context.synchronize()
         t = start.time_till(end)
         return out,t
@@ -346,20 +347,29 @@ if __name__ == "__main__":
             plt.savefig('RunningTime_canterbury.jpg')
 
             #Ratio
+            x = np.arange(8)
             fig2 = plt.figure(2,figsize=(8,8))
             ax2 = fig2.add_subplot(111)
-            ax2.bar(filenames,cpu_ratio,align = 'center',alpha=0.5,label='CPU Ratio')
-            ax2.bar(filenames,gpu_ratio,align = 'center',alpha=0.5,label='GPU Ratio')
+            WIDTH = 0.4
             if(NAIVE_ACTIVE):
-                ax2.bar(filenames,naive_ratio,align = 'center',alpha=0.5,label='Naive Ratio')
+                WIDTH = 0.2
+                ax2.bar(x,naive_ratio,width=WIDTH,label='Naive Ratio')
+            ax2.bar(x-0.2,cpu_ratio,width=WIDTH,label='CPU Ratio')
+            ax2.bar(x+0.2,gpu_ratio,width=WIDTH,label='GPU Ratio')
+
 
             ax2.set_ylabel("Compression Ratio")
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(filenames)
             ax2.legend(loc=0)
             ax2.grid()
             ax2.set_xlabel("Filename")
-            ax2.set_ylim(0,1)
+            #ax2.set_ylim(0,1)
             ax2.set_title('Compression Ratio for canterbury files')
-            plt.savefig('CompressionRatio_canterbury.jpg')
+            if(NAIVE_ACTIVE):
+                plt.savefig('CompressionRatio_canterbury_with_naive.jpg')
+            else:
+                plt.savefig('CompressionRatio_canterbury.jpg')
 
 
 
