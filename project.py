@@ -138,7 +138,6 @@ class LZSS:
 if __name__ == "__main__":
     #Filenames
     filenames = ['random1mb','random5mb','random10mb','random50mb']
-    filenames = 
     #Operations
     operations = ['gpu','cpu','naive']
 
