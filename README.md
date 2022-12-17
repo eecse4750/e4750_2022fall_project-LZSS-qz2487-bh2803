@@ -32,7 +32,7 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 └── kernel.py
 ```
 
-# Detailed instructions to run our project:
+## Code running instruction:
 1. ``kernel_old.py`` and ``kernel.py`` contains all the cuda kernel code in our project.
 2. To test our code,  
 * run ``python project.py`` to test random number file with different sizes
