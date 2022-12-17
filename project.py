@@ -137,55 +137,54 @@ class LZSS:
 
 
 if __name__ == "__main__":
-    #Main Code
-
-    #Open Test file
+    #Filenames
     filenames = ['wordlist.txt','gistfile1.txt','big.txt']
+    for filename in filenames:
         with open(filename,'r',encoding='utf-8') as f:
             content = f.read()
         file_list_r = [*content]
         file_arr_r = np.array(file_list_r).astype(bytes)
 
-    if(DEBUG):
-        print("First 50 elements:")
-        print(file_arr_r[:50])
-        print("Input Shape")
-        print(file_arr_r.shape)
+        if(DEBUG):
+            print("First 50 elements:")
+            print(file_arr_r[:50])
+            print("Input Shape")
+            print(file_arr_r.shape)
 
-    #Open write file
-    w_f = open('result.txt','wb')
+        #Open write file
+        w_f = open('result.txt','wb')
 
 
-    # Create an instance of the CudaModule class
-    PS = LZSS()
+        # Create an instance of the CudaModule class
+        PS = LZSS()
 
-    #Initialize the arrays take times:
-    avg_total_cpu_time = np.array([])
-    avg_total_inef_time = np.array([])
-    avg_total_ef_time = np.array([])
+        #Initialize the arrays take times:
+        avg_total_cpu_time = np.array([])
+        avg_total_inef_time = np.array([])
+        avg_total_ef_time = np.array([])
 
-    #Nested loops:
-    #InputDimensions->Iterations->Methods
-    print("Testing Started!")
-    print("----------------")
+        #Nested loops:
+        #InputDimensions->Iterations->Methods
+        print("Testing Started!")
+        print("----------------")
 
-    #Initialize the running time array
-    total_cpu_time = np.array([])
-    total_gpu_time = np.array([])
+        #Initialize the running time array
+        total_cpu_time = np.array([])
+        total_gpu_time = np.array([])
 
-    #run
-    result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
+        #run
+        result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
 
-    if(DEBUG):
-        print("Compressed Result")
-        print(result[:100])
-        print("Shape of Result:")
-        print(len(result))
+        if(DEBUG):
+            print("Compressed Result")
+            print(result[:100])
+            print("Shape of Result:")
+            print(len(result))
 
-    for elem in result:
-        elem = bytes(elem)
-        w_f.write(elem)
-    f.close()
-    w_f.close()
+        for elem in result:
+            elem = bytes(elem)
+            w_f.write(elem)
+        f.close()
+        w_f.close()
 
 
