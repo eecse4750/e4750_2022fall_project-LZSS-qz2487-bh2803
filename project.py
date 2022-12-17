@@ -13,7 +13,7 @@ import cpu_conpress as cpu
 # Local Modules
 import kernels_old as kernels
 
-DEBUG = True;
+DEBUG = True
 np.set_printoptions(threshold=np.inf)
 np.set_printoptions(suppress=True)
 class LZSS:
@@ -43,7 +43,7 @@ class LZSS:
         end = cuda.Event()
         start.record()
         # TODO: CPU function implementation
-        lzss
+        res = lzss.compress(input)
         end.record()
         cuda.Context.synchronize()
         t = start.time_till(end)
@@ -56,6 +56,7 @@ class LZSS:
         start.record()
         # TODO: CPU function implementation
         print(len(input))
+        
         end.record()
         cuda.Context.synchronize()
         t = start.time_till(end)
