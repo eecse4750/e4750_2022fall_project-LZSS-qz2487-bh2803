@@ -1,5 +1,5 @@
 # e4750_2022Fall_Project
-This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our topic is LZSS parallel compression.
+This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our topic is LZSS parallel compression. We use a parallel implementation of LZSS algorithm to comrpess data.
 
 ## File Organization
 ```
@@ -31,16 +31,15 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 ├── kernel_old.py
 └── kernel.py
 ```
-2 directories, 12 files
-Seed (team/shared) repo for team projects
-  - distributed as Github Repo and shared via Github Classroom
-  - contains only README.md file
-  - The students should upload their project code into the repo
-  - The organization of the directories, python, CUDA and OpenCL files has to be meaningful, and described in this README file
 
-# Detailed instructions how to submit this assignment/homework/project:
-1. The project assignment will be distributed as a github classroom assignment - as a special repository accessed through a link
-2. A students copy of the repo gets created automatically with a special name -> students have to rename the repo per instructions below
+# Detailed instructions:
+1. ``kernel_old.py`` and ``kernel.py`` contains all the cuda kernel code in our project.
+2. To test our code,  
+run ``python project.py`` to test random number file with different sizes
+run ``python project.py -d`` to test different kinds of files
+You can also add ``-a`` like ``python project.py -a`` to give a test on random number files with extra naive CPU test.
+Note: Naive implementation is very slow since it has dynamic array.
+
 3. The project code has to be submitted inside this repository 
 
 ## (Re)naming of the project repository shared by multiple students (TODO students)
