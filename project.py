@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as scisg
 import pycuda.autoinit
 import lzss
-import cpu_conpress as cpu
+import LZSSCPU
 
 # Local Modules
 import kernels_old as kernels
@@ -49,26 +49,27 @@ class LZSS:
         t = start.time_till(end)
         return res,t
 
-    def CPU_Compress_naive(self,input):
+    def CPU_Compress_naive(self,input,length):
         # implement this, note you can change the function signature (arguments and return type)
         start = cuda.Event()
         end = cuda.Event()
         start.record()
         # TODO: CPU function implementation
-        print(len(input))
-        
+        #print(len(input))
+        encoder = LZSSCPU()
+        res = encoder.compress(input)
         end.record()
         cuda.Context.synchronize()
         t = start.time_till(end)
         return res,t
 
-    def GPU_Compress(self,input_string,length):
+    def GPU_Compress(self,input,length):
         #Event objects to indicate starts and ends
         start = cuda.Event()
         end = cuda.Event()
 
         #initial list
-        X = input_string
+        X = input
         Y = np.append(np.zeros_like(X),np.zeros_like(X))
         #Z = np.zeros_like(Y)
 
@@ -102,7 +103,7 @@ class LZSS:
         end.record()
         #cuda.Context.synchronize()
         #t = start.time_till(end)
-        t=0;
+        t=0
         return out,t
     
     def Compress(self,input):
@@ -114,7 +115,7 @@ class LZSS:
             print("Uncompressed Result:")
             print(input[:100])
             print()
-        i = 0;
+        i = 0
         while i < length:
             #print(i)
             if (input[i*2] != b''):
