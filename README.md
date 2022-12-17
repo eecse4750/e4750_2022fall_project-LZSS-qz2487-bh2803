@@ -14,6 +14,8 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 │   └── random50mb.txt
 ├── result
 │   └── ... (result bin files)
+├── iamge
+│   └── ... (result jpg files)
 ├── canterbury
 │   ├── SHA1SUM
 │   ├── alice29.txt
@@ -27,8 +29,7 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 │   ├── sum
 │   └── xargs.1
 ├── kernel_old.py
-├── kernel.py
-└── test_cuda.py
+└── kernel.py
 ```
 2 directories, 12 files
 Seed (team/shared) repo for team projects
