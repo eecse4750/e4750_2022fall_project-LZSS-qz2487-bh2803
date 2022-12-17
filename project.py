@@ -9,6 +9,7 @@ import scipy.signal as scisg
 import pycuda.autoinit
 import lzss
 import LZSSCPU
+import sys,getopt
 
 # Local Modules
 import kernels_old as kernels
@@ -136,10 +137,33 @@ class LZSS:
 
 
 if __name__ == "__main__":
+    #MACRO to change different version test
+    DIFF_FILE = False
+    NAIVE_ACTIVE = False
+
+    argumentList = sys.argv[1:]
+    options = "da:"
+    try:
+        arguments,values = getopt.getopt(argumentList,options)
+        for currentArgument,currentValue in arguments:
+            if (currentArgument == "-d"):
+                DIFF_FILE = True
+            elif (currentArgument == "-a"):
+                NAIVE_ACTIVE = True
+    except getopt.error as err:
+        print(str(err))
+
+
     #Filenames
-    filenames = ['random1mb','random5mb','random10mb','random50mb']
+    if (DIFF_FILE == False):
+        filenames = ['random1mb','random5mb','random10mb','random50mb']
+        #filenames = ['random1mb']
+    else:
+        filenames = ['SHA1SUM','alice29.txt','asyoulik.txt','fields.c','grammar.lsp',\
+                 'lcet10.txt','plrabn12.txt','xargs.1']
     #Operations
     operations = ['gpu','cpu','naive']
+    #operations = ['cpu']
 
     #Size Array
     size_arr = np.array([])
@@ -153,10 +177,15 @@ if __name__ == "__main__":
     cpu_time = np.array([])
     gpu_time = np.array([])
     naive_time = np.array([])
-    NAIVE_ACTIVE = False
+
     for p,filename in enumerate(filenames):
-        with open("./testfile/%s.txt"%filename,'r',encoding='utf-8') as f:
-            content = f.read()
+        if (DIFF_FILE == False):
+            with open("./testfile/%s.txt"%filename,'r',encoding='utf-8') as f:
+                content = f.read()
+        else:
+            with open("./canterbury/%s"%filename,'r',encoding='utf-8') as f:
+                content = f.read()
+
         file_list_r = [*content]
         file_arr_r = np.array(file_list_r).astype(bytes)
         input_len = len(file_arr_r)
@@ -167,8 +196,7 @@ if __name__ == "__main__":
             print("Input Shape")
             print(file_arr_r.shape)
 
-        #Open write file
-        w_f = open('result_%s.bin'%filename,'wb')
+
 
 
         # Create an instance of the CudaModule class
@@ -184,31 +212,48 @@ if __name__ == "__main__":
         
         for operation in operations:
             if (operation == 'cpu'):
-                result,t = PS.CPU_Compress_lzss(file_arr_r,len(file_arr_r))
-                res_len = len(result)
+                #Open write file
+                w_f = open('./result/result_%s_%s.bin'%(filename,operation),'wb')
+                res_cpu,t = PS.CPU_Compress_lzss(file_arr_r,len(file_arr_r))
+                w_f.write(res_cpu)
+
+                res_len = len(res_cpu)
                 ratio = res_len/input_len
                 cpu_ratio = np.append(cpu_ratio,ratio)
                 cpu_time = np.append(cpu_time,t)
+
                 print("CPU running time for file(%s): %f"%(filename,t))
                 print("Compression Ratio: %.4f"%ratio)
 
 
+            elif (operation == 'gpu'):
+                #Open write file
+                w_f = open('./result/result_%s_%s.bin'%(filename,operation),'wb')
+                res_gpu,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
+                res_len = len(res_gpu)
+                ratio = res_len/input_len
+                gpu_ratio = np.append(gpu_ratio,ratio)
+                gpu_time = np.append(gpu_time,t)
+                #Write in File
+                for elem in res_gpu:
+                    elem = bytes(elem)
+                    w_f.write(elem)
+                print("GPU running time for file(%s): %f"%(filename,t))
+                print("Compression Ratio: %.4f"%ratio)
             else:
-                if (operation == 'gpu'):
-                    result,t = PS.GPU_Compress(file_arr_r,len(file_arr_r))
-                    res_len = len(result)
+                if (NAIVE_ACTIVE == True):
+                    w_f = open('./result/result_%s_%s.bin'%(filename,operation),'wb')
+                    res_naive,t = PS.CPU_Compress_naive(file_arr_r,len(file_arr_r))
+                    res_len = len(res_naive)
                     ratio = res_len/input_len
-                    gpu_ratio = np.append(gpu_ratio,ratio)
-                    gpu_time = np.append(gpu_time,t)
-                    print("GPU running time for file(%s): %f"%(filename,t))
+                    naive_ratio = np.append(naive_ratio,ratio)
+                    naive_time = np.append(naive_time,t)
+                    #Write in File
+                    for elem in res_naive:
+                        elem = bytes(elem)
+                        w_f.write(elem)
+                    print("CPU Naive running time for file(%s): %f"%(filename,t))
                     print("Compression Ratio: %.4f"%ratio)
-                else:
-                    if (NAIVE_ACTIVE == True):
-                        result,t = PS.CPU_Compress_naive(file_arr_r,len(file_arr_r))
-                        res_len = len(result)
-                        ratio = res_len/input_len
-                        print("CPU Naive running time for file(%s): %f"%(filename,t))
-                        print("Compression Ratio: %.4f"%ratio)
         
         print("----------------")
         print("Testing Finished For file %s" %filename)
@@ -222,34 +267,72 @@ if __name__ == "__main__":
             print("Shape of Result:")
             print(len(result))
 
-        #Write in File
-        for elem in result:
-            elem = bytes(elem)
-            w_f.write(elem)
+
         f.close()
         w_f.close()
 
     #Plot
-    fig = plt.figure(p)
-    ax = fig.add_subplot(111)
-    ax.plot(size_arr,cpu_time,'.-',label='CPU time')
-    ax.plot(size_arr,gpu_time,'x-',label='GPU time')
-    if(NAIVE_ACTIVE):
-        ax.plot(size_arr,naive_time,'o-',label='Naive Time')
-    ax2 = ax.twinx()
-    ax2.plot(size_arr,cpu_ratio,'.-',label='CPU Ratio')
-    ax2.plot(size_arr,cpu_ratio,'x-',label='GPU Ratio')
-    if(NAIVE_ACTIVE):
-        ax.plot(size_arr,naive_ratio,'o-',label='Naive Ratio')
-    ax.grid()
-    ax.legend(loc=0)
-    ax.set_xlabel("Size(bit)")
-    ax.set_yscale('log')
-    ax.set_ylabel("Time(ms)")
-    ax2.set_ylabel("Compression Ratio")
-    ax2.legend(loc=0)
-    ax2.set_ylim(0,1)
-    plt.savefig('Result.jpg')
+    if (DIFF_FILE == False):
+        #Running Time
+        fig = plt.figure(1)
+        ax = fig.add_subplot(111)
+        ax.plot(size_arr,cpu_time,'.-',label='CPU time')
+        ax.plot(size_arr,gpu_time,'x-',label='GPU time')
+        if(NAIVE_ACTIVE):
+            ax.plot(size_arr,naive_time,'o-',label='Naive Time')
+        ax.grid()
+        ax.legend(loc=0)
+        ax.set_xlabel("Size(bit)")
+        ax.set_yscale('log')
+        ax.set_ylabel("Time(ms)") 
+        ax.set_title('Running Time for Rdm Num Files')
+        plt.savefig('RunningTime.jpg')
+        #Ratio
+        fig2 = plt.figure(2)
+        ax2 = fig2.add_subplot(111)
+        ax2.plot(size_arr,cpu_ratio,'.-',label='CPU Ratio')
+        ax2.plot(size_arr,gpu_ratio,'x-',label='GPU Ratio')
+        if(NAIVE_ACTIVE):
+            ax2.plot(size_arr,naive_ratio,'o-',label='Naive Ratio')
+
+        ax2.set_ylabel("Compression Ratio")
+        ax2.legend(loc=0)
+        ax2.grid()
+        ax2.set_xlabel("Size(bit)")
+        ax2.set_ylim(0,1)
+        ax2.set_title('Compression Ratio for Rdm Num Files')
+        plt.savefig('CompressionRatio.jpg')
+    else:
+        #Running Time
+        fig = plt.figure(1,figsize=(8,8))
+        ax = fig.add_subplot(111)
+        ax.plot(filenames,cpu_time,'.-',label='CPU time')
+        ax.plot(filenames,gpu_time,'x-',label='GPU time')
+        if(NAIVE_ACTIVE):
+            ax.plot(filenames,naive_time,'o-',label='Naive Time')
+        ax.grid()
+        ax.legend(loc=0)
+        ax.set_xlabel("Size(bit)")
+        ax.set_yscale('log')
+        ax.set_ylabel("Time(ms)") 
+        ax.set_title('Running Time for Canterbury files')
+        plt.savefig('RunningTime_canterbury.jpg')
+
+        #Ratio
+        fig2 = plt.figure(2,figsize=(8,8))
+        ax2 = fig2.add_subplot(111)
+        ax2.plot(filenames,cpu_ratio,'.-',label='CPU Ratio')
+        ax2.plot(filenames,gpu_ratio,'x-',label='GPU Ratio')
+        if(NAIVE_ACTIVE):
+            ax2.plot(filenames,naive_ratio,'o-',label='Naive Ratio')
+
+        ax2.set_ylabel("Compression Ratio")
+        ax2.legend(loc=0)
+        ax2.grid()
+        ax2.set_xlabel("Filename")
+        ax2.set_ylim(0,1)
+        ax2.set_title('Compression Ratio for canterbury files')
+        plt.savefig('CompressionRatio_canterbury.jpg')
 
 
 

@@ -1,0 +1,21 @@
+;;; -*- Mode: Lisp; Syntax: Common-*-
+
+(define-language
+  :grammar¾(((S $any) -> (S1Ñ¾ (Ïœound $sİ2)
+Ö1)íjunctionúææÚatement $vÿP÷bjI$tense>
++cknowledgaAs
++ommand
+>P Self presentbuestion
+©ux $tense) (NP $subjîòè!Ã
+êe-ArgşEOccur	pocJoc)&^(Loc-Adjunct~›(VPjv)—(VP1Ñî-Éux×õresentù5P2fAdjunct?Vf$relfoc)v](Verb/in ¹o)Í{¹$objÈrÛ(NP,êi)7?ga)v{e
+oc-Adjunct»
+«˜)Ô(Pronoun×(rticlæ&&$x $y)_mber $xG‡,/vrepN<ªªHNdjunct? $v_Ë(Loc-Ò$tenseÚË+Allegro¡û$rel $subj $loc @rest)ôP@á;'Wucid'i €”PH£¾ğõôlexiconô(ô(Acknowledge $a)0es true) (no fals|aybe unc}uharsedAE4qere tÁnearby ÍÓleft right up d•ªticl‡> a anÅ©x $tensÿwill futurÿdid past0 $finite)ñem presen:rebsbRCK(wa|9en9JonjunctionZnd --’(Noun $Áold Wumpu|t breeze stench glitter nothing	ÍmbÁ 1 2 3 4 5 6 7 8 9Írep $p@İn at to near
+7nounyou self) (me master{€89erb/Nrel $tensemo move $finit²went»‚\(¼½	âÖ(shoot ÁÚ(Verb/tr $rel $tensÇ>ßarryê?(@A	iS]rab ˜
+F™‰(getœ’Âºelease è
+¢éºÒropïed	(shoÙMat	÷hoPFillQ~dndeerceiveŒeel¸v»y¬(Verb/di $rel $tens“> (bring 
+Âroughtóù(ge4	Ûo4ø)
+
+(defparameter *senes*A((I will sho]he wumpus at 4 4@yes²ou w…right -- ”o left²arry old
+²and no²id yÄring meïeze is hereÑm near 5 3	)tench8n 3 5	)it8Jy	s umpux*id you go tofQes@othing`hereQhoot»×eftjill‰- s×p)))
+
+(defun ss (&optional (sentenc¹	&)ÏRme test 	& and count how many were not parsed."=^if-r   #'(lambda$format t "~2&>>> ~(~{~a ~}~)~%" rite›cond (vs)) :pretty t)sentences*õ

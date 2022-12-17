@@ -1,0 +1,89 @@
+.TH XARGS 1L \" -*- nroffè.SH NAME
+xargs \- build and execute comm∂ines from st∂rd inputùYNOPSIS
+.B ß[\-0prtx] ˙[eof-str][replace
+[max- ]˘ +ˆ;harC;rocC-nulldof[=		f=-	+=	¶dnteractive]Ñ\hars∞ŸperboseÁxitÁßroc‹
+Œrg‹&ºo-run-if-empty
+ÁionÁelpommand [initial$ments]]
+.SH DESCRIPTION
+This manual page
+docxthe GNU Oof
+.BR xu .æ√reads 	ufrom´tandard input, delimited by blanks (which can be
+protecith double or sing2u!4 backslash)4ewlines,
+ÔexecuBhe
+.I commc(default is /bin/echoT3ore timC*nysnitial-arguments
+followed by 	ºread from st{rd≥ut.  Blank lin•n the
+Êaügnored.
+.P
+.B xº
+exiŸith∆ngÂus:
+.nf
+0 if it succeeds
+123Xnyocatif<omm2d7L1-125gXÇ5§©s killëy a signal•©annot be run•”ound
+1”ome o◊ error occurred.
+.fi
+.SS OPTIONS
+.TP
+.I "\-\-null, \-0"
+Inpu2lenames are terminated by a vcharacïinstead ofüwhitespace, and the quo≈Œackslashêot special (every
+™ taken lƒally).  Disabl⁄”œf file string, which
+eatede‹ o+ÍumentsefulBn	b might
+containB9ace, quoïarks, or backslasheskhe GNU find
+\-print0 option produces input suitable f¨hiÇde.
+.TP
+.I "\-\-eof[=str], \-e[
+Setı end ofƒe ng to \fIfR.  If->ccurs as a line5nput,-est5/áis ignored.
+XI£mittedãõ no^k  Øhis
+option— givenãŸdefaults to "_".
+.TP
+.I "\-\-help"
+PÊ a summary€ˆ).B xargs
+axit0eplace[=Ö, \-i[é
+RÜoccurencesSfIéfR in the’tial jments with
+namæead from standard’ut.
+Also, unquoted blanks do not terminate
+‰
+If \fIreplace-str\fR is omit it
+defaults to "{}" (like for `find \-exec').  ImpliesH-x\fP and
+û 1§
+.TP
+.I "\-\-max-lines[=	≈, -l[
+–
+Use at mostù∆fR nonblank input …per comm®…
+˜efaults to 1 if omitted.  Trai„ 
+ cauÏ
+
+Ge logicallytinued on the next 
+r  Implies
+\fI\-x\fR.
+.TP
+.I "\-\-max-args=œ \-n œ
+Use at most ∏–fR ”ments per command®ewhan∑ill be used if- size (see[-s option)
+is exceeded, unlessiqziven, in which caslBx:Lxit.
+.TP
+.I "\-\-interact°m"
+Promptçser about©é to run ea≠mmand line ead afÎÒerminal.  Only
+Úfesponse starts
+with `y' or `Y'Bmplies \fI\-t\fR.
+.TP
+.I "\-\-no-Jif-empty, \-r"
+I`tVrd input doçot contain any◊blanks,“ÿunøcomm∆  Normallµ¡is˘nce even iæe!oÃ
+.TP
+.I "\-\-max-chars=	U \-s 	U
+Use at most \fI	UfR Ycters per command line,Aluding the
+§©nitial arguments«he õinat∏ull‹·nds of
+‚’str∏.  T„efault i‹ l‘,ossible, up to 20k
+characÊ.
+.TP
+.I "\-\-verbos@-t"
+P˙ommand line onxtÅrd error output before executing
+itWionq…numbeû
+.B xargs
+Åx∏˚ \-x"
+E˚if÷ize (see÷fI\-s\fR optÃ is˘eeded˛ax-procs=	\ 	\
+Run up to0]8asses at a time; the defaultB.  If
+äs 0oBxargïill rÅstyô
+possible
+£  UseÆfI\-n—ptionÊh⁄\-P—
+otherwise chan˚are that only one exec will be done.
+.SH "SEE ALSO"
+\fBfind\fP(1L), âocateêdbêïpd	±)àçng Filesê(on-line in Info, or prin≤

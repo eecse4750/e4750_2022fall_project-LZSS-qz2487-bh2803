@@ -1,0 +1,114 @@
+#ifndef lint
+static char Rcs_Id[] =
+$$Id: fields.c,v 1.7 1994/01/06 05:26:37 geoff Exp $";
+#endif
+
+/*
+ * $Log¬éevision¸½	ÈÑêet rid of all references to System V string routines, for portabilityÿsigh).,-evision 1.994/01/05  20:13:43  geoffvdd the maxf parameter”  02:40:21ªake¸ncrements settable (field_line_and nc).ûdd support forLD_NOSHRINK flag@üevision 1.4  1993/09/27~:48:02  geoffAix some lint compla© and¢arenUizatwrrorsj
+~9  01:11:11”dd a return value to fieldwrite. upport for backquotes and;İnstripped?lashes.	
+evision 1.2  1993/08/26  00:02:50  geoffRix a stupid null-pointe>gm€  21:32:0Ü™nitial rÆ¿
+
+#include <stdio.h>
+	config.h"ields.<t *	<ead P ((FILEïile, charcelims,
+				  int flags, axf));z* RW line withe?from£g*/
+GakeZm§‹llocated, Şelims,—êlagséaxf));* MÖ½ld structure from1æ*/
+static3tâ5arse P ((Z charaL„elims,% int flags, §axf)); * PjheY±a‹*/
+static±sackch P ((…tr out°tripºocess ólash sequen.àëÏriteùILEile,dld_tbldpelim U line withj to–fGoidMreXl)	ˆÃtreturned by¢ead³unsigønt	ËÌnc = 20; ãncrement toe #Ôû/
+ine%12	.=llengthQ#ifndef USG
+#¦‘trchr	i¥
+#endifzSGxtern void	free ();
+Õhar *	mallocåeù·ænt*enå/*
+ * Read one liYf the givEile< a buffer, b it uprPields, and retu:hem uealler.  Te—t struc¤’£d must eju¶ bÀeİith•ô’
+ÂÁead (file, delims, flag-axf)
+    FILE *		"	/* F#to inesòm	=harE)NrctersVse for field'Šknt	Gag~ption ¸ se”œ.hªaxfaximum number ofÔar“¬­egisthar *	linebuf; ¿uffo hold the 3read innt		2ax:aximumQ@iz		g;urrentbSuf = (char *) malloc (field_€inc);“ (	Ì NULL)
+	return
+÷´axÓè	izeÓö*÷* Read in the íU÷hile (fgets (&#uf[A,h(hF f}U!= NULL)
+	{
+	’+= strlen‡;
+	if (Š- 1] == '\n'Ä·reakñlseËaxÒield_Êincñà= (char *) loc	ö 5Nf	o== NULL)
+		return—/
+	}
+…ize”œ
+	free	o‚¡¶¡ieldmake	‹ 1, delims, flagaxŞ®
+
+şt *ı allocatedóhar *				/* L
+to#e in‡;structure */*nt				M Z if G	Mwithfloc¥relims}êcters†se for•ò§lagöption 0 se.h"axf÷aximum number ofLar$%egistxNt *	M5tructure describing the}nt			linesize; ¶urrent æbuff¡ë‘¯= (	¤ malloc (êf	);Û == NULL)
+	returnUC>nhinebuf+ted ? :cxeadnl
+}ize}trlen (fù	è 1] == '\n')
+	{
+	è--èÄ\0';
+	Ñ;
+	}ã*ã* Shrink the ûbuffer if necessary.
+/Œf (allocated  &&  (flags & FLD_NOSHRINK) == 0)
+	{
+	line = fieldp->Íuf =
+	ªhar *) re(Ô Íize + 1);
+	ifùÃULLÇ   Ê:Õreeù:eturn28
+	}
+Z!rse ( delims, flagŸaxfV:
+
+statict */°egister
+½È	/* F¿structure to Ín)/öharİİ)e+6HdelimsHcC(/or fy‰8nt			flag}ption · se“›.h©axf~aximum number ofÓar’«¬Öax; ğsizerrayÜhar *		lineout0heretollated Un ]N	quote;	2šUcte‚sŠQieldp->nÂ = 0;Ãax = (à !Ò &&  í ÂÂinc) ? í 2 :
+Ö->	Ëchar **)loc (	Û sizeofF)0i7 NULL)
+	{
+	!ree|;
+	return
+	}	uflags
+	& (FLD_SHQUOTES | ÒGLØACKØBè)¾ ==à
+	È|=0àhile (1(
+	if (+UN'Œjline != '\0'  &&  strchr (delims,  ¥ULLq¡+;			/* Skip runs of »ters */Œf§Òreak;ü
+	fieldp->&[&. = ÕutE
+Ş	 ào the next delimiter.  Atgnd of saing, "H will[oin~ eih a
+po³ull byte.[
+	if (flags & (FLD_SHQUOTES | çGLíACKíáóBıLASH))hile (*line != '\0')
+		Bif (strchr (delims, PUULL]reak;^lse e(flags &,NGLQUOTES)  && x=W\ || Ÿ¤ACK³'ÍB²')Í {8f ×Hé= 08 òø= fieldp->{[{ƒ)8quot.'\0';8lse›sff´i f (Ÿ¦¬¬ğÄù'  &&  (flags & FLD_BACKSLASH)+ëÿreakN= fieldbackch ( &ut,e)TRIPQUOTES)N?ilseO“+ = Î+risÇÂ¿* Process quoted string */¿f ((flags & FLD_STRIPQUOTES) == 0)Êã+Kòhile (J!= '\0'EF$zUF`£‘flags & FLD_STRIPQUOTES)™†yut++ =œ£{+;		/* Go on pastœ*/¬Ê×hile (Ü!= '\0'> &&  strchr (delims, P8ULL=R+;	/* Skip to pter */>>Œreak;µ]lse if (x\\'†ŒµÖlags & FLD_BACKSLASHæïÚ+ÂÕåÇreak#Ñ</= fieldbackch ( &ut,	; flags & FLD_STRIPQUOTES)#;@PJx+ = '\\'£f (*++q=Ì')	€reak£ÂÂ¤¤³¯+ÒÓñì
+'ñXhile (!= '\0'  &&  strchr (delims,> == NULL)GA		/* Skip to ”ter */X{ut = ze
+	fieldp->ní²	if (œ+¢\0'ªÑreakşaxf != 0  &&  í> 'ßut =ÿ7 6ax…+‚6incXOr{M (char **) realloc
+o{	ƒ* sizeof Ô)µ½ NULL)
+		{4½reeåreturn.4
+	}
+*k* Shrink the pointers and Q	‚trucS.rkf ((flags & FLD_NOSHRINK) == 0  && „->n… >=„ax)
+	{
+	åï (char **) realloc (åï
+	  (å 1) * sizeof (char *));
+	if (î->ø == NULL)
+	ƒieldfree ();ƒeturn NULL¢
+	}
+	Œ->[ÄÌ =¯mªœ¿
+
+static intöackch (str, out, p)ëister char *			/* First;f lash sequence */.	#Ghere to'‘esultlnt		BpFZ“onvert theco¬hˆ~céeing developed£ú*		orig±	¹#nal value of &×Úf (!&p)
+	{
+	*(*out)++ = '\\';
+	L@f'  &&  	s}s '0}|‚ '7')VH²]Q²eturnÊx0k´
+	}
+´witch •
+	¸aseä¹
+æ×Ï7*	:]D]w¨¿Ùğ
+
+* Hexadecimal sequence */#rigstrLtr++ShLSf (*£M'  &&  ÆÌ')
+		µ©-Íylse ÂĞá' + 0xa÷"7KX
+in< 4) |L+y')…lse Œš!«' + 0xaÎé!úreak$a-0':†
+
+
+
+
+
+|* Octal sequence */zrigstr = Şh+ - '0'f (>= && <4')
+		< 3) |,+I#mreakmefault:n(*out)d `neturn 1·
+ºf (Šp”
+	Ôh·ìtr°rigá÷lseor (chİ; (<" +è)+
+4
+
+int fieldwrite (file,œ, delim)‘ILE *		©	/* Fªto ¢o */‘egisterœtÆ°Ïld structurÖånt			·Ï0ğo place betweenóã$rrorZ if an noccur	Yegis?*Uo; umb@fSbeing writtenZ^‚ 0;c„¢Ú·o <·->n¢
+ó+)
+	{
+	if
+æÚ
+	
+Ğ= putc (delim,ÿe) == EOF;
+		8A#->	L
+4"->hadnl19\n'L—eturn ]–
+
+void…ldfreeÑisterït *	Ÿ	/* FñstrucØ to õ/Ñ
+Ñfù== NULL)
+	re0;	L>linebuf !=X9(char *) pfP"¼©‹©
