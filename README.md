@@ -48,4 +48,4 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 4. ``iamge`` folder returns the image file we produced during execution.
 ## Plots with our test
 ![image](/e4750_2022fall_project-lzss/image/RunningTime_canterbury.jpg)
-![image](/e4750_2022fall_project-lzss/image/CompressionRatio_canterbury_with_naive.jpg)
+![image]([/e4750_2022fall_project-lzss/image/CompressionRatio_canterbury_with_naive.jpg](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/CompressionRatio_canterbury_with_naive.jpg))
