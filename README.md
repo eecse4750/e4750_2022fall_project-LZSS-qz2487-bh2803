@@ -38,6 +38,7 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 run ``python project.py`` to test random number file with different sizes
 run ``python project.py -d`` to test different kinds of files
 You can also add ``-a`` like ``python project.py -a`` to give a test on random number files with extra naive CPU test.
+
 Note: Naive implementation is very slow since it has dynamic array.
 
 3. The project code has to be submitted inside this repository 
