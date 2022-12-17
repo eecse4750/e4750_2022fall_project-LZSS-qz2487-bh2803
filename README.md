@@ -32,24 +32,17 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 └── kernel.py
 ```
 
-# Detailed instructions:
+# Detailed instructions to run our project:
 1. ``kernel_old.py`` and ``kernel.py`` contains all the cuda kernel code in our project.
 2. To test our code,  
-run ``python project.py`` to test random number file with different sizes
-run ``python project.py -d`` to test different kinds of files
-You can also add ``-a`` like ``python project.py -a`` to give a test on random number files with extra naive CPU test.
-
-&ensp;&ensp;&ensp;&ensp;**Note**: Naive implementation is very slow since it has dynamic array.
-
-3. The project code has to be submitted inside this repository 
-
-## (Re)naming of the project repository shared by multiple students (TODO students)
-INSTRUCTIONS for (re)naming the students' solution repository for assignments with more students, such as the final project. Students need to use a 4-letter groupID: 
-* Template: e4750-2022Fall-Project-GroupID-UNI1-UNI2-UNI3. -> Example: e4750-2022Fall-Project-MEME-zz9999-aa9999-aa0000.
-
-## Other Instructions
-1. See detailed instructions in the E4750.2022Fall.ProjectInstructions
-2. The report as a pdf file has to submitted twice - once in the github, once uploaded into the courseworks
-3. The code has to be submitted only in github
-4. Final project slides have to be google slides in google/liondrive E4750_2022FallProjects
-5. There will be no due date extensions, slip days do not apply for project
+* run ``python project.py`` to test random number file with different sizes
+* run ``python project.py -d`` to test different kinds of files
+* add ``-a`` like ``python project.py -a`` to give a test on random number files with extra naive CPU test.
+**Note**: Naive implementation is very slow since it used dynamic arrays.
+* add ``-f`` like ``python project.py -f FILENAME`` to test your own file.
+**Note**: DIY file doesn't give a plot back to folder ``image``
+## File Details
+1. Canterbury Corpus data is contained in ``canterbury`` folder. The Canterbury Corpus is a benchmark to enable researchers to evaluate lossless compression methods. This site includes test files and compression test results for many research compression methods.
+2. ``testfile`` folder contains the random number data with differnet sizes.
+3. ``result`` folder contains the result bin files which are not able to be opened. It can be decoded back to original file with proper implementation.
+4. ``iamge`` folder returns the image file we produced during execution.
