@@ -98,10 +98,8 @@ class LZSS:
 
         #Copy Back
         cuda.memcpy_dtoh(Y,Y_gpu)
-        out = self.Compress(Y)
-        
-
         end.record()
+        out = self.Compress(Y)
         cuda.Context.synchronize()
         t = start.time_till(end)
         return out,t
@@ -318,8 +316,9 @@ if __name__ == "__main__":
             #Ratio
             fig2 = plt.figure(2)
             ax2 = fig2.add_subplot(111)
-            ax2.plot(size_arr,cpu_ratio,'.-',label='CPU Ratio')
-            ax2.plot(size_arr,gpu_ratio,'x-',label='GPU Ratio')
+            print(cpu_ratio)
+            ax2.plot(size_arr.astype(str),cpu_ratio,'.-',label='CPU Ratio')
+            ax2.plot(size_arr.astype(str),gpu_ratio,'x-',label='GPU Ratio')
             if(NAIVE_ACTIVE):
                 ax2.plot(size_arr,naive_ratio,'o-',label='Naive Ratio')
 
@@ -346,21 +345,21 @@ if __name__ == "__main__":
             ax.set_title('Running Time for Canterbury files')
             plt.savefig('RunningTime_canterbury.jpg')
 
-        #Ratio
-        fig2 = plt.figure(2,figsize=(8,8))
-        ax2 = fig2.add_subplot(111)
-        ax2.plot(filenames,cpu_ratio,'.-',label='CPU Ratio')
-        ax2.plot(filenames,gpu_ratio,'x-',label='GPU Ratio')
-        if(NAIVE_ACTIVE):
-            ax2.plot(filenames,naive_ratio,'o-',label='Naive Ratio')
+            #Ratio
+            fig2 = plt.figure(2,figsize=(8,8))
+            ax2 = fig2.add_subplot(111)
+            ax2.bar(filenames,cpu_ratio,align = 'center',alpha=0.5,label='CPU Ratio')
+            ax2.bar(filenames,gpu_ratio,align = 'center',alpha=0.5,label='GPU Ratio')
+            if(NAIVE_ACTIVE):
+                ax2.bar(filenames,naive_ratio,align = 'center',alpha=0.5,label='Naive Ratio')
 
-        ax2.set_ylabel("Compression Ratio")
-        ax2.legend(loc=0)
-        ax2.grid()
-        ax2.set_xlabel("Filename")
-        ax2.set_ylim(0,1)
-        ax2.set_title('Compression Ratio for canterbury files')
-        plt.savefig('CompressionRatio_canterbury.jpg')
+            ax2.set_ylabel("Compression Ratio")
+            ax2.legend(loc=0)
+            ax2.grid()
+            ax2.set_xlabel("Filename")
+            ax2.set_ylim(0,1)
+            ax2.set_title('Compression Ratio for canterbury files')
+            plt.savefig('CompressionRatio_canterbury.jpg')
 
 
 
