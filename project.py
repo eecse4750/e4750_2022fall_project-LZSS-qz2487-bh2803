@@ -7,6 +7,8 @@ from pycuda.compiler import SourceModule
 import matplotlib.pyplot as plt
 import scipy.signal as scisg
 import pycuda.autoinit
+import lzss
+import cpu_conpress as cpu
 
 # Local Modules
 import kernels_old as kernels
@@ -35,13 +37,25 @@ class LZSS:
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
-    def CPU_Compress(self,input):
+    def CPU_Compress_lzss(self,input):
         # implement this, note you can change the function signature (arguments and return type)
         start = cuda.Event()
         end = cuda.Event()
         start.record()
         # TODO: CPU function implementation
+        lzss
+        end.record()
+        cuda.Context.synchronize()
+        t = start.time_till(end)
+        return res,t
 
+    def CPU_Compress_naive(self,input):
+        # implement this, note you can change the function signature (arguments and return type)
+        start = cuda.Event()
+        end = cuda.Event()
+        start.record()
+        # TODO: CPU function implementation
+        print(len(input))
         end.record()
         cuda.Context.synchronize()
         t = start.time_till(end)
@@ -124,10 +138,11 @@ if __name__ == "__main__":
     #Main Code
 
     #Open Test file
-    with open('gistfile1.txt','r',encoding='utf-8') as f:
-        content = f.read()
-    file_list_r = [*content]
-    file_arr_r = np.array(file_list_r).astype(bytes)
+    filenames = ['wordlist.txt','gistfile1.txt','big.txt']
+        with open(filename,'r',encoding='utf-8') as f:
+            content = f.read()
+        file_list_r = [*content]
+        file_arr_r = np.array(file_list_r).astype(bytes)
 
     if(DEBUG):
         print("First 50 elements:")
