@@ -45,7 +45,7 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 1. Canterbury Corpus data is contained in ``canterbury`` folder. The Canterbury Corpus is a benchmark to enable researchers to evaluate lossless compression methods. This site includes test files and compression test results for many research compression methods.
 2. ``testfile`` folder contains the random number data with differnet sizes.
 3. ``result`` folder contains the result bin files which are not able to be opened. It can be decoded back to original file with proper implementation.
-4. ``iamge`` folder returns the image file we produced during execution.
+4. ``image`` folder returns the image file we produced during execution.
 ## Plots with our test
 ![image](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/RunningTime_canterbury.jpg)
 ![image](https://github.com/eecse4750/e4750_2022fall_project-LZSS-qz2487-bh2803/blob/ckernel/image/CompressionRatio_canterbury_with_naive.jpg)
