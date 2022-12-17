@@ -61,7 +61,7 @@ class LZSSCPU():
                     offset = i - index - len(checkBuf)
                     length = len(checkBuf)
 
-                    token = f"~{offset},{length}"
+                    token = f"{offset}{length}"
 
                     if len(token) > length:
                         if(self.DEBUG_LEVEL > 0):

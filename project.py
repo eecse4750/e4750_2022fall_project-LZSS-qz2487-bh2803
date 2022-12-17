@@ -137,18 +137,31 @@ class LZSS:
 
 if __name__ == "__main__":
     #Filenames
-    filenames = ['sequency.txt','gistfile1.txt','big.txt']
+    filenames = ['random1mb','random5mb','random10mb','random50mb']
+    filenames = 
     #Operations
     operations = ['gpu','cpu','naive']
 
+    #Size Array
+    size_arr = np.array([])
 
+    #Compression Ratio array
+    cpu_ratio = np.array([])
+    gpu_ratio = np.array([])
+    naive_ratio = np.array([])
+
+    #Initialize the arrays take times:
+    cpu_time = np.array([])
+    gpu_time = np.array([])
+    naive_time = np.array([])
+    NAIVE_ACTIVE = False
     for p,filename in enumerate(filenames):
-        with open(filename,'r',encoding='utf-8') as f:
+        with open("./testfile/%s.txt"%filename,'r',encoding='utf-8') as f:
             content = f.read()
         file_list_r = [*content]
         file_arr_r = np.array(file_list_r).astype(bytes)
         input_len = len(file_arr_r)
-
+        size_arr = np.append(size_arr,input_len)
         if(DEBUG):
             print("First 50 elements:")
             print(file_arr_r[:50])
@@ -156,7 +169,7 @@ if __name__ == "__main__":
             print(file_arr_r.shape)
 
         #Open write file
-        w_f = open('result_{:s}.bin'.format(filename),'wb')
+        w_f = open('result_%s.bin'%filename,'wb')
 
 
         # Create an instance of the CudaModule class
@@ -166,18 +179,10 @@ if __name__ == "__main__":
         print("----------------")
         print("File Size in Bytes:%d"%input_len)
 
-        #Compression Ratio array
-        cpu_ratio = np.array([])
-        gpu_ratio = np.array([])
-        naive_ratio = np.array([])
 
-        #Initialize the arrays take times:
-        cpu_time = np.array([])
-        gpu_time = np.array([])
-        naive_time = np.array([])
 
-        #run
-        NAIVE_ACTIVE = False
+        #FLAG to decide whether giving NAIVE version
+        
         for operation in operations:
             if (operation == 'cpu'):
                 result,t = PS.CPU_Compress_lzss(file_arr_r,len(file_arr_r))
@@ -211,16 +216,42 @@ if __name__ == "__main__":
         
         print()
 
+
         if(DEBUG):
             print("Compressed Result")
             print(result[:100])
             print("Shape of Result:")
             print(len(result))
 
+        #Write in File
         for elem in result:
             elem = bytes(elem)
             w_f.write(elem)
         f.close()
         w_f.close()
+
+    #Plot
+    fig = plt.figure(p)
+    ax = fig.add_subplot(111)
+    ax.plot(size_arr,cpu_time,'.-',label='CPU time')
+    ax.plot(size_arr,gpu_time,'x-',label='GPU time')
+    if(NAIVE_ACTIVE):
+        ax.plot(size_arr,naive_time,'o-',label='Naive Time')
+    ax2 = ax.twinx()
+    ax2.plot(size_arr,cpu_ratio,'.-',label='CPU Ratio')
+    ax2.plot(size_arr,cpu_ratio,'x-',label='GPU Ratio')
+    if(NAIVE_ACTIVE):
+        ax.plot(size_arr,naive_ratio,'o-',label='Naive Ratio')
+    ax.grid()
+    ax.legend(loc=0)
+    ax.set_xlabel("Size(bit)")
+    ax.set_yscale('log')
+    ax.set_ylabel("Time(ms)")
+    ax2.set_ylabel("Compression Ratio")
+    ax2.legend(loc=0)
+    ax2.set_ylim(0,1)
+    plt.savefig('Result.jpg')
+
+
 
 
