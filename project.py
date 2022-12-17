@@ -156,7 +156,7 @@ if __name__ == "__main__":
             print(file_arr_r.shape)
 
         #Open write file
-        w_f = open('result_{:s}.txt'.format(filename),'wb')
+        w_f = open('result_{:s}.bin'.format(filename),'wb')
 
 
         # Create an instance of the CudaModule class
@@ -164,6 +164,7 @@ if __name__ == "__main__":
 
         print("Testing Started For File: %s" %filename)
         print("----------------")
+        print("File Size in Bytes:%d"%input_len)
 
         #Compression Ratio array
         cpu_ratio = np.array([])
