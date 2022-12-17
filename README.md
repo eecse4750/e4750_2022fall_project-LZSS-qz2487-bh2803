@@ -2,7 +2,7 @@
 This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our topic is LZSS parallel compression.
 
 ## File Organization
-'''
+```
 ├── project.py
 ├── README.md
 ├── LZSSCPU.py
@@ -29,7 +29,7 @@ This is the repo for our final project of EECSE4750 Heterogeneous Computing. Our
 ├── kernel_old.py
 ├── kernel.py
 └── test_cuda.py
-'''
+```
 2 directories, 12 files
 Seed (team/shared) repo for team projects
   - distributed as Github Repo and shared via Github Classroom
