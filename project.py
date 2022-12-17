@@ -138,7 +138,7 @@ class LZSS:
 
 if __name__ == "__main__":
     #Filenames
-    filenames = ['wordlist.txt','gistfile1.txt','big.txt']
+    filenames = ['sequency.txt','gistfile1.txt','big.txt']
     #Operations
     operations = ['gpu','cpu','naive']
 
