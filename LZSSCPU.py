@@ -90,9 +90,8 @@ class LZSSCPU():
                 searchBuf = searchBuf[1:]
 
             i += 1
-
-
-        return bytes(output)
+        output = np.array(output).astype(bytes)
+        return output
 
 
 if __name__ == "__main__":

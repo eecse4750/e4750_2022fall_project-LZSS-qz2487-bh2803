@@ -37,7 +37,7 @@ class LZSS:
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
-    def CPU_Compress_lzss(self,input):
+    def CPU_Compress_lzss(self,input,length):
         # implement this, note you can change the function signature (arguments and return type)
         start = cuda.Event()
         end = cuda.Event()
@@ -56,7 +56,7 @@ class LZSS:
         start.record()
         # TODO: CPU function implementation
         #print(len(input))
-        encoder = LZSSCPU()
+        encoder = LZSSCPU.LZSSCPU()
         res = encoder.compress(input)
         end.record()
         cuda.Context.synchronize()
@@ -101,9 +101,8 @@ class LZSS:
         
 
         end.record()
-        #cuda.Context.synchronize()
-        #t = start.time_till(end)
-        t=0
+        cuda.Context.synchronize()
+        t = start.time_till(end)
         return out,t
     
     def Compress(self,input):
@@ -177,6 +176,7 @@ if __name__ == "__main__":
         naive_time = np.array([])
 
         #run
+        NAIVE_ACTIVE = False
         for operation in operations:
             if (operation == 'cpu'):
                 result,t = PS.CPU_Compress_lzss(file_arr_r,len(file_arr_r))
@@ -198,14 +198,17 @@ if __name__ == "__main__":
                     print("GPU running time for file(%s): %f"%(filename,t))
                     print("Compression Ratio: %.4f"%ratio)
                 else:
-                    result,t = PS.CPU_Compress_naive(file_arr_r,len(file_arr_r))
-                    res_len = len(result)
-                    ratio = res_len/input_len
-                    print("CPU Naive running time for file(%s): %f"%(filename,t))
-                    print("Compression Ratio: %.4f"%ratio)
-
-        print("Testing Finished For file %s" %filename)
+                    if (NAIVE_ACTIVE == True):
+                        result,t = PS.CPU_Compress_naive(file_arr_r,len(file_arr_r))
+                        res_len = len(result)
+                        ratio = res_len/input_len
+                        print("CPU Naive running time for file(%s): %f"%(filename,t))
+                        print("Compression Ratio: %.4f"%ratio)
+        
         print("----------------")
+        print("Testing Finished For file %s" %filename)
+        
+        print()
 
         if(DEBUG):
             print("Compressed Result")
