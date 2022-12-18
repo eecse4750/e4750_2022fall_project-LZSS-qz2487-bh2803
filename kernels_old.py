@@ -26,9 +26,9 @@ typedef = r'''
 
 kw_matchfunc = r'''
     __device__ en_str_t FindMatch(
-        int windowHead, 
-        int uncodedHead, 
-        unsigned char* slidingWindow, 
+        int StartPoint_win, 
+        int StartPoint_uncoded, 
+        unsigned char* searchWindow, 
         unsigned char* uncodedLookahead,
         int tx, 
         int bx, 
@@ -44,7 +44,7 @@ kw_matchfunc = r'''
         
         matchData.length = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
         matchData.offset = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
-        i = windowHead ;  // start at the beginning of the sliding window //
+        i = StartPoint_win ;  // start at the beginning of the sliding window //
         j = 0; //counter for matchings
 
         
@@ -56,7 +56,7 @@ kw_matchfunc = r'''
         int tempi=0;
         while (loop<WINDOW_SIZE)
         {
-            if (slidingWindow[i] == uncodedLookahead[(uncodedHead+j)% (WINDOW_SIZE+MAX_CODED)])
+            if (searchWindow[i] == uncodedLookahead[(StartPoint_uncoded+j)% (WINDOW_SIZE+MAX_CODED)])
             {
                 j++;
                 matchingState=1;		
@@ -105,14 +105,12 @@ kw_kernel_encode = r'''
     __global__ void EncodeKernel(unsigned char * in_d, unsigned char * out_d)
         {
 
-
-        /* cyclic buffer sliding window of already read characters */
-        __shared__ unsigned char slidingWindow[WINDOW_SIZE+(MAX_CODED)];
+        __shared__ unsigned char searchWindow[WINDOW_SIZE+(MAX_CODED)];
         __shared__ unsigned char uncodedLookahead[MAX_CODED*2];
-        __shared__ unsigned char encodedData[MAX_CODED*2];
+        __shared__ unsigned char encodedBuf[MAX_CODED*2];
         en_str_t matchData;
     
-        int windowHead, uncodedHead;    // head of sliding window and lookahead //
+        int StartPoint_win, StartPoint_uncoded;    // head of sliding window and lookahead //
         int filepoint;			//file index pointer for reading
         int wfilepoint;			//file index pointer for writing
         int lastcheck;			//flag for last run of the packet
@@ -121,16 +119,9 @@ kw_kernel_encode = r'''
         int bx = blockIdx.x;
         int tx = threadIdx.x; 
         
-        
-    //***********************************************************************
-    // * Fill the sliding window buffer with some known values.  DecodeLZSS must
-    // * use the same values.  If common characters are used, there's an
-    // * increased chance of matching to the earlier strings.
-    // *********************************************************************** //
-        //printf("%d",WINDOW_SIZE+(MAX_CODED));
-        slidingWindow[tx] = ' ';
-        windowHead = tx;
-        uncodedHead = tx;
+        searchWindow[tx] = ' ';
+        StartPoint_win = tx;
+        StartPoint_uncoded = tx;
 
         filepoint=0;
         wfilepoint=0;
@@ -138,18 +129,12 @@ kw_kernel_encode = r'''
         
         __syncthreads();
 
-        
-        //***********************************************************************
-        //* Copy MAX_CODED bytes from the input file into the uncoded lookahead
-        //* buffer.
-        //*********************************************************************** //
-    
         //uncodedLookahead[tx] = tex1Dfetch(in_d_tex, bx * PCKTSIZE + tx); //in_d[bx * PCKTSIZE + tx];
         uncodedLookahead[tx] = in_d[bx * PCKTSIZE + tx];
         filepoint+=MAX_CODED;
         
-        slidingWindow[ (windowHead + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[uncodedHead];
-        //tex1Dfetch(in_d_tex, bx * PCKTSIZE + tx);//uncodedLookahead[uncodedHead];
+        searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
+        //tex1Dfetch(in_d_tex, bx * PCKTSIZE + tx);//uncodedLookahead[StartPoint_uncoded];
         
         __syncthreads(); 
         
@@ -165,10 +150,10 @@ kw_kernel_encode = r'''
         
         loadcounter++;
         // Look for matching string in sliding window //	
-        matchData = FindMatch(windowHead, uncodedHead,slidingWindow,uncodedLookahead,  tx, bx, 0, 0,loadcounter);
+        matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,  tx, bx, 0, 0,loadcounter);
         __syncthreads();  
         
-        // now encoded the rest of the file until an EOF is read //
+        //encode the rest of the file
         while ((filepoint) <= PCKTSIZE && !lastcheck)
         {		
         
@@ -176,66 +161,52 @@ kw_kernel_encode = r'''
             
             if (matchData.length >= MAX_CODED)
                 {
-                        // garbage beyond last data happened to extend match length //
                         matchData.length = MAX_CODED-1;
                 }
 
             if (matchData.length <= MAX_UNCODED)
             {
-                // not long enough match.  write uncoded byte //
                 matchData.length = 1;   // set to 1 for 1 byte uncoded //
-                encodedData[tx*2] = 1;
-                encodedData[tx*2 + 1] = uncodedLookahead[uncodedHead];
+                encodedBuf[tx*2] = 1;
+                encodedBuf[tx*2 + 1] = uncodedLookahead[StartPoint_uncoded];
             }
             else if(matchData.length > MAX_UNCODED)
             {	//printf("%d\n",matchData.offset);
-                // match length > MAX_UNCODED.  Encode as offset and length. //
-                encodedData[tx*2] = (unsigned char)matchData.length;
+                encodedBuf[tx*2] = (unsigned char)matchData.length;
                 
-                encodedData[tx*2+1] = (unsigned char)matchData.offset;			
+                encodedBuf[tx*2+1] = (unsigned char)matchData.offset;			
             }
 
                 
             //write out the encoded data into output
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedData[tx*2];
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedData[tx*2+1];
-            //printf("%c",encodedData[tx*2]);
-            //printf("%c",encodedData[tx*2+1]);
+            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
+            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
             
             
             //update written pointer and heads
             wfilepoint = wfilepoint + MAX_CODED*2;
             
-            windowHead = (windowHead + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
-            uncodedHead = (uncodedHead + MAX_CODED) % (MAX_CODED*2);
+            StartPoint_win = (StartPoint_win + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
+            StartPoint_uncoded = (StartPoint_uncoded + MAX_CODED) % (MAX_CODED*2);
             
             __syncthreads(); 	
 
-                    
-            //if(lastcheck==1)
-            //{
-            //	break;			
-            //}	
-            
-            //if(!lastcheck)
             {
                 if(filepoint<PCKTSIZE){
-                    //uncodedLookahead[(uncodedHead+ MAX_CODED)% (MAX_CODED*2)] = tex1Dfetch(in_d_tex, bx * PCKTSIZE + filepoint + tx);
-                    uncodedLookahead[(uncodedHead+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
+                    uncodedLookahead[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
                     filepoint+=MAX_CODED;
                     
                     //find the location for the thread specific view of window
-                    slidingWindow[ (windowHead + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[uncodedHead];
-                    //__syncthreads(); 	
-                }
+                    searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
+                    //__syncthreads();                 }
                 else{
                     lastcheck++;				
-                    slidingWindow[(windowHead + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
+                    searchWindow[(StartPoint_win + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
                 }
                 __syncthreads(); 	
                 
                 loadcounter++;
-                matchData = FindMatch(windowHead, uncodedHead,slidingWindow,uncodedLookahead,tx,bx, wfilepoint, lastcheck,loadcounter);
+                matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,tx,bx, wfilepoint, lastcheck,loadcounter);
             }
             
         } //while
@@ -254,31 +225,29 @@ kw_kernel_encode = r'''
 
             if (matchData.length <= MAX_UNCODED)
             {
-                // not long enough match.  write uncoded byte //
                 matchData.length = 1;   // set to 1 for 1 byte uncoded //
-                encodedData[tx*2] = 1;
-                encodedData[tx*2 + 1] = uncodedLookahead[uncodedHead];
+                encodedBuf[tx*2] = 1;
+                encodedBuf[tx*2 + 1] = uncodedLookahead[StartPoint_uncoded];
             }
             else if(matchData.length > MAX_UNCODED)
             {	
-                // match length > MAX_UNCODED.  Encode as offset and length. //
-                encodedData[tx*2] = (unsigned char)matchData.length;
-                encodedData[tx*2+1] = (unsigned char)matchData.offset;			
+                encodedBuf[tx*2] = (unsigned char)matchData.length;
+                encodedBuf[tx*2+1] = (unsigned char)matchData.offset;			
             }
 
                 
             //write out the encoded data into output
 
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedData[tx*2];
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedData[tx*2+1];
-            //printf("%c",encodedData[tx*2]);
-            //printf("%c",encodedData[tx*2+1]);
+            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
+            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
+            //printf("%c",encodedBuf[tx*2]);
+            //printf("%c",encodedBuf[tx*2+1]);
 
             //update written pointer and heads
             wfilepoint = wfilepoint + MAX_CODED*2;
             
-            windowHead = (windowHead + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
-            uncodedHead = (uncodedHead + MAX_CODED) % (MAX_CODED*2);
+            StartPoint_win = (StartPoint_win + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
+            StartPoint_uncoded = (StartPoint_uncoded + MAX_CODED) % (MAX_CODED*2);
             
     }
 '''
