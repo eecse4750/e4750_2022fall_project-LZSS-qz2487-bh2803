@@ -126,7 +126,6 @@ kw_kernel_encode = r'''
         
         __syncthreads();
 
-        //uncodedLookahead[tx] = tex1Dfetch(in_d_tex, bx * PCKTSIZE + tx); //in_d[bx * PCKTSIZE + tx];
         uncodedLookahead[tx] = in_d[bx * PCKTSIZE + tx];
         filepoint+=MAX_CODED;
         
