@@ -1,9 +1,9 @@
 
 kw_constant = r'''
-    #define MAX_UNCODED     2
-    #define MAX_CODED       128
+    #define MIN_CODE_NUM     2
+    #define MaxMatch       128
     #define WINDOW_SIZE     128
-    #define PCKTSIZE        4096
+    #define PKTSIZE        4096
     #define TRUE            1
     #define FALSE           0
 '''
@@ -39,18 +39,18 @@ kw_matchfunc = r'''
         int matchingState=0;
         int loop=0;
         
-        matchInfo.length = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
-        matchInfo.offset = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
-        i = StartPoint_win ;  // start at the beginning of the sliding window //
+        matchInfo.length = 1; 
+        matchInfo.offset = 1; 
+        i = StartPoint_win ;  
         j = 0; //counter for matchings
 
         
-        isMAX = MAX_CODED - tx*isLAST;
+        isMAX = MaxMatch - tx*isLAST;
         
         int tempi=0;
         while (loop<WINDOW_SIZE)
         {
-            if (searchWindow[i] == uncodedWindow[(StartPoint_uncoded+j)% (WINDOW_SIZE+MAX_CODED)])
+            if (searchWindow[i] == uncodedWindow[(StartPoint_uncoded+j)% (WINDOW_SIZE+MaxMatch)])
             {
                 j++;
                 matchingState=1;		
@@ -62,7 +62,7 @@ kw_matchfunc = r'''
                     matchInfo.length = j;
                     tempi=i-j;
                     if(tempi<0)
-                        tempi+=WINDOW_SIZE+MAX_CODED;
+                        tempi+=WINDOW_SIZE+MaxMatch;
                     matchInfo.offset = tempi;
                 }
                 
@@ -70,7 +70,7 @@ kw_matchfunc = r'''
                 matchingState=0;		
             }
         
-            i = (i + 1) % (WINDOW_SIZE+MAX_CODED);
+            i = (i + 1) % (WINDOW_SIZE+MaxMatch);
             loop++;	
             if (loop >= isMAX-1)
             {
@@ -83,7 +83,7 @@ kw_matchfunc = r'''
             matchInfo.length = j;
             tempi=i-j;
             if(tempi<0)
-                tempi+=WINDOW_SIZE+MAX_CODED;
+                tempi+=WINDOW_SIZE+MaxMatch;
 
             matchInfo.offset = tempi;
         }
@@ -98,15 +98,15 @@ kw_kernel_encode = r'''
     __global__ void EncodeKernel(unsigned char * in_d, unsigned char * out_d)
         {
 
-        __shared__ unsigned char searchWindow[WINDOW_SIZE+(MAX_CODED)];
-        __shared__ unsigned char uncodedWindow[MAX_CODED*2];
-        __shared__ unsigned char encodedBuf[MAX_CODED*2];
+        __shared__ unsigned char searchWindow[WINDOW_SIZE+(MaxMatch)];
+        __shared__ unsigned char uncodedWindow[MaxMatch*2];
+        __shared__ unsigned char encodedBuf[MaxMatch*2];
         en_str_t matchInfo;
     
-        int StartPoint_win, StartPoint_uncoded;    // head of sliding window and lookahead //
-        int filepoint;			//file index pointer for reading
-        int wfilepoint;			//file index pointer for writing
-        int isLAST;			//flag for last run of the packet
+        int StartPoint_win, StartPoint_uncoded;
+        int filepoint;
+        int wfilepoint;
+        int isLAST;	
         int loadcounter=0;
         
         int bx = blockIdx.x;
@@ -122,17 +122,17 @@ kw_kernel_encode = r'''
         
         __syncthreads();
 
-        uncodedWindow[tx] = in_d[bx * PCKTSIZE + tx];
-        filepoint+=MAX_CODED;
+        uncodedWindow[tx] = in_d[bx * PKTSIZE + tx];
+        filepoint+=MaxMatch;
         
         //write data to shared memory
-        searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedWindow[StartPoint_uncoded];
+        searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MaxMatch) ] = uncodedWindow[StartPoint_uncoded];
         
         __syncthreads(); 
 
-        uncodedWindow[MAX_CODED+tx] = in_d[bx * PCKTSIZE + filepoint + tx];
+        uncodedWindow[MaxMatch+tx] = in_d[bx * PKTSIZE + filepoint + tx];
         
-        filepoint+=MAX_CODED;
+        filepoint+=MaxMatch;
 
         __syncthreads();
         
@@ -141,20 +141,20 @@ kw_kernel_encode = r'''
         __syncthreads();  
         
         //encode the rest of the file
-        while ((filepoint) <= PCKTSIZE && !isLAST)
+        while ((filepoint) <= PKTSIZE && !isLAST)
         {		
-            if (matchInfo.length >= MAX_CODED)
+            if (matchInfo.length >= MaxMatch)
                 {
-                        matchInfo.length = MAX_CODED-1;
+                        matchInfo.length = MaxMatch-1;
                 }
 
             //write ended bytes to encoded memory
-            if (matchInfo.length <= MAX_UNCODED){
+            if (matchInfo.length <= MIN_CODE_NUM){
                 matchInfo.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
                 encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
-            else if(matchInfo.length > MAX_UNCODED){
+            else if(matchInfo.length > MIN_CODE_NUM){
                 encodedBuf[tx*2] = (unsigned char)matchInfo.length;
                 
                 encodedBuf[tx*2+1] = (unsigned char)matchInfo.offset;			
@@ -163,29 +163,28 @@ kw_kernel_encode = r'''
                 
 
             //write the encoded data into output
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
+            out_d[bx * PKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
+            out_d[bx * PKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
             
             
-            wfilepoint = wfilepoint + MAX_CODED*2;
+            wfilepoint = wfilepoint + MaxMatch*2;
             
-            StartPoint_win = (StartPoint_win + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
-            StartPoint_uncoded = (StartPoint_uncoded + MAX_CODED) % (MAX_CODED*2);
+            StartPoint_win = (StartPoint_win + MaxMatch) % (WINDOW_SIZE+MaxMatch);
+            StartPoint_uncoded = (StartPoint_uncoded + MaxMatch) % (MaxMatch*2);
             
             __syncthreads(); 	
 
 
             //update shared memory
-            if(filepoint<PCKTSIZE){
-                uncodedWindow[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
-                filepoint+=MAX_CODED;
-                //find the location for the thread specific view of window
-                searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedWindow[StartPoint_uncoded];
+            if(filepoint<PKTSIZE){
+                uncodedWindow[(StartPoint_uncoded+ MaxMatch)% (MaxMatch*2)] = in_d[bx * PKTSIZE + filepoint + tx];
+                filepoint+=MaxMatch;
+                searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MaxMatch) ] = uncodedWindow[StartPoint_uncoded];
              }
 
             else{
                 isLAST++;				
-                searchWindow[(StartPoint_win + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
+                searchWindow[(StartPoint_win + MaxMatch ) % (WINDOW_SIZE+MaxMatch)] = '^';		
             }
             __syncthreads(); 	
                 
@@ -197,39 +196,39 @@ kw_kernel_encode = r'''
 
             if(isLAST==1)
             {
-                if(matchInfo.length > (MAX_CODED - tx))
-                    matchInfo.length = MAX_CODED - tx;
+                if(matchInfo.length > (MaxMatch - tx))
+                    matchInfo.length = MaxMatch - tx;
             }
             
-            if (matchInfo.length >= MAX_CODED)
+            if (matchInfo.length >= MaxMatch)
                 {
                     // garbage beyond last data happened to extend match length //
-                    matchInfo.length = MAX_CODED-1;
+                    matchInfo.length = MaxMatch-1;
                 }
 
-            if (matchInfo.length <= MAX_UNCODED)
+            if (matchInfo.length <= MIN_CODE_NUM)
             {
                 matchInfo.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
                 encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
-            else if(matchInfo.length > MAX_UNCODED)
+            else if(matchInfo.length > MIN_CODE_NUM)
             {	
                 encodedBuf[tx*2] = (unsigned char)matchInfo.length;
                 encodedBuf[tx*2+1] = (unsigned char)matchInfo.offset;			
             }
 
 
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
-            out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
+            out_d[bx * PKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
+            out_d[bx * PKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
             //printf("%c",encodedBuf[tx*2]);
             //printf("%c",encodedBuf[tx*2+1]);
 
             //update written pointer and heads
-            wfilepoint = wfilepoint + MAX_CODED*2;
+            wfilepoint = wfilepoint + MaxMatch*2;
             
-            StartPoint_win = (StartPoint_win + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
-            StartPoint_uncoded = (StartPoint_uncoded + MAX_CODED) % (MAX_CODED*2);
+            StartPoint_win = (StartPoint_win + MaxMatch) % (WINDOW_SIZE+MaxMatch);
+            StartPoint_uncoded = (StartPoint_uncoded + MaxMatch) % (MaxMatch*2);
             
     }
 '''
