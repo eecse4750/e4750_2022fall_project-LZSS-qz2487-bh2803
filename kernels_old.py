@@ -16,7 +16,7 @@ typedef = r'''
         {
             //offset i.e. start point address
             int offset;
-            /length of longest match
+            //length of longest match
             int length;
         } en_str_t;
 
