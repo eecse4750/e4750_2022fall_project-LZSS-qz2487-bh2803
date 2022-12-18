@@ -45,10 +45,7 @@ kw_matchfunc = r'''
         j = 0; //counter for matchings
 
         
-        //if(lastcheck) 
-            maxcheck = MAX_CODED - tx*lastcheck;
-        //else
-        //	maxcheck = MAX_CODED;
+        maxcheck = MAX_CODED - tx*lastcheck;
         
         int tempi=0;
         while (loop<WINDOW_SIZE)
@@ -77,8 +74,7 @@ kw_matchfunc = r'''
             loop++;	
             if (loop >= maxcheck-1)
             {
-                /// we wrapped around ///
-                loop = WINDOW_SIZE; //break;
+                loop = WINDOW_SIZE; //stop while loop
             }
         }
         
@@ -189,25 +185,23 @@ kw_kernel_encode = r'''
 
 
 
-            {
-                if(filepoint<PCKTSIZE){
-                    uncodedLookahead[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
-                    filepoint+=MAX_CODED;
-                    //find the location for the thread specific view of window
-                    searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
-                 }
+            if(filepoint<PCKTSIZE){
+                uncodedLookahead[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
+                filepoint+=MAX_CODED;
+                //find the location for the thread specific view of window
+                searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
+             }
 
-                else{
-                    lastcheck++;				
-                    searchWindow[(StartPoint_win + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
-                }
-                __syncthreads(); 	
-                
-                loadcounter++;
-                matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,tx, lastcheck);
+            else{
+                lastcheck++;				
+                searchWindow[(StartPoint_win + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
             }
+            __syncthreads(); 	
+                
+            loadcounter++;
+            matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,tx, lastcheck);
             
-        } //while
+        } //end while
         
 
             if(lastcheck==1)
