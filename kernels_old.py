@@ -31,11 +31,11 @@ kw_matchfunc = r'''
         unsigned char* searchWindow, 
         unsigned char* uncodedWindow,
         int tx, 
-        int lastcheck)
+        int isLAST)
     {
         en_str_t matchInfo;
         int i, j;
-        int maxcheck;
+        int isMAX;
         int matchingState=0;
         int loop=0;
         
@@ -45,7 +45,7 @@ kw_matchfunc = r'''
         j = 0; //counter for matchings
 
         
-        maxcheck = MAX_CODED - tx*lastcheck;
+        isMAX = MAX_CODED - tx*isLAST;
         
         int tempi=0;
         while (loop<WINDOW_SIZE)
@@ -72,7 +72,7 @@ kw_matchfunc = r'''
         
             i = (i + 1) % (WINDOW_SIZE+MAX_CODED);
             loop++;	
-            if (loop >= maxcheck-1)
+            if (loop >= isMAX-1)
             {
                 loop = WINDOW_SIZE; //stop while loop
             }
@@ -106,7 +106,7 @@ kw_kernel_encode = r'''
         int StartPoint_win, StartPoint_uncoded;    // head of sliding window and lookahead //
         int filepoint;			//file index pointer for reading
         int wfilepoint;			//file index pointer for writing
-        int lastcheck;			//flag for last run of the packet
+        int isLAST;			//flag for last run of the packet
         int loadcounter=0;
         
         int bx = blockIdx.x;
@@ -118,7 +118,7 @@ kw_kernel_encode = r'''
 
         filepoint=0;
         wfilepoint=0;
-        lastcheck=0;
+        isLAST=0;
         
         __syncthreads();
 
@@ -141,7 +141,7 @@ kw_kernel_encode = r'''
         __syncthreads();  
         
         //encode the rest of the file
-        while ((filepoint) <= PCKTSIZE && !lastcheck)
+        while ((filepoint) <= PCKTSIZE && !isLAST)
         {		
             if (matchInfo.length >= MAX_CODED)
                 {
@@ -184,18 +184,18 @@ kw_kernel_encode = r'''
              }
 
             else{
-                lastcheck++;				
+                isLAST++;				
                 searchWindow[(StartPoint_win + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
             }
             __syncthreads(); 	
                 
             loadcounter++;
-            matchInfo = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,tx, lastcheck);
+            matchInfo = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,tx, isLAST);
             
         } //end while
         
 
-            if(lastcheck==1)
+            if(isLAST==1)
             {
                 if(matchInfo.length > (MAX_CODED - tx))
                     matchInfo.length = MAX_CODED - tx;
