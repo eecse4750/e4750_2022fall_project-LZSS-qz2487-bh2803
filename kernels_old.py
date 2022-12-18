@@ -33,14 +33,14 @@ kw_matchfunc = r'''
         int tx, 
         int lastcheck)
     {
-        en_str_t matchData;
+        en_str_t matchInfo;
         int i, j;
         int maxcheck;
         int matchingState=0;
         int loop=0;
         
-        matchData.length = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
-        matchData.offset = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
+        matchInfo.length = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
+        matchInfo.offset = 1; // make it 1 in the 0 case, it will be returned as 1, 0 gives problems
         i = StartPoint_win ;  // start at the beginning of the sliding window //
         j = 0; //counter for matchings
 
@@ -57,13 +57,13 @@ kw_matchfunc = r'''
             }
             else
             {
-                if(matchingState && j > matchData.length)
+                if(matchingState && j > matchInfo.length)
                 {
-                    matchData.length = j;
+                    matchInfo.length = j;
                     tempi=i-j;
                     if(tempi<0)
                         tempi+=WINDOW_SIZE+MAX_CODED;
-                    matchData.offset = tempi;
+                    matchInfo.offset = tempi;
                 }
                 
                 j=0;
@@ -78,18 +78,18 @@ kw_matchfunc = r'''
             }
         }
         
-        if(j > matchData.length && matchingState )
+        if(j > matchInfo.length && matchingState )
         {
-            matchData.length = j;
+            matchInfo.length = j;
             tempi=i-j;
             if(tempi<0)
                 tempi+=WINDOW_SIZE+MAX_CODED;
 
-            matchData.offset = tempi;
+            matchInfo.offset = tempi;
         }
             
         
-        return matchData;
+        return matchInfo;
     }
 '''
 
@@ -101,7 +101,7 @@ kw_kernel_encode = r'''
         __shared__ unsigned char searchWindow[WINDOW_SIZE+(MAX_CODED)];
         __shared__ unsigned char uncodedWindow[MAX_CODED*2];
         __shared__ unsigned char encodedBuf[MAX_CODED*2];
-        en_str_t matchData;
+        en_str_t matchInfo;
     
         int StartPoint_win, StartPoint_uncoded;    // head of sliding window and lookahead //
         int filepoint;			//file index pointer for reading
@@ -142,7 +142,7 @@ kw_kernel_encode = r'''
         
         loadcounter++;
         // Look for matching string in sliding window //	
-        matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,  tx, 0);
+        matchInfo = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,  tx, 0);
         __syncthreads();  
         
         //encode the rest of the file
@@ -151,22 +151,22 @@ kw_kernel_encode = r'''
         
             
             
-            if (matchData.length >= MAX_CODED)
+            if (matchInfo.length >= MAX_CODED)
                 {
-                        matchData.length = MAX_CODED-1;
+                        matchInfo.length = MAX_CODED-1;
                 }
 
-            if (matchData.length <= MAX_UNCODED)
+            if (matchInfo.length <= MAX_UNCODED)
             {
-                matchData.length = 1;   // set to 1 for 1 byte uncoded //
+                matchInfo.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
                 encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
-            else if(matchData.length > MAX_UNCODED)
-            {	//printf("%d\n",matchData.offset);
-                encodedBuf[tx*2] = (unsigned char)matchData.length;
+            else if(matchInfo.length > MAX_UNCODED)
+            {	//printf("%d\n",matchInfo.offset);
+                encodedBuf[tx*2] = (unsigned char)matchInfo.length;
                 
-                encodedBuf[tx*2+1] = (unsigned char)matchData.offset;			
+                encodedBuf[tx*2+1] = (unsigned char)matchInfo.offset;			
             }
 
                 
@@ -199,33 +199,33 @@ kw_kernel_encode = r'''
             __syncthreads(); 	
                 
             loadcounter++;
-            matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,tx, lastcheck);
+            matchInfo = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,tx, lastcheck);
             
         } //end while
         
 
             if(lastcheck==1)
             {
-                if(matchData.length > (MAX_CODED - tx))
-                    matchData.length = MAX_CODED - tx;
+                if(matchInfo.length > (MAX_CODED - tx))
+                    matchInfo.length = MAX_CODED - tx;
             }
             
-            if (matchData.length >= MAX_CODED)
+            if (matchInfo.length >= MAX_CODED)
                 {
                     // garbage beyond last data happened to extend match length //
-                    matchData.length = MAX_CODED-1;
+                    matchInfo.length = MAX_CODED-1;
                 }
 
-            if (matchData.length <= MAX_UNCODED)
+            if (matchInfo.length <= MAX_UNCODED)
             {
-                matchData.length = 1;   // set to 1 for 1 byte uncoded //
+                matchInfo.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
                 encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
-            else if(matchData.length > MAX_UNCODED)
+            else if(matchInfo.length > MAX_UNCODED)
             {	
-                encodedBuf[tx*2] = (unsigned char)matchData.length;
-                encodedBuf[tx*2+1] = (unsigned char)matchData.offset;			
+                encodedBuf[tx*2] = (unsigned char)matchInfo.length;
+                encodedBuf[tx*2+1] = (unsigned char)matchInfo.offset;			
             }
 
                 
