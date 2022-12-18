@@ -175,7 +175,7 @@ kw_kernel_encode = r'''
             __syncthreads(); 	
 
 
-
+            //update shared memory
             if(filepoint<PCKTSIZE){
                 uncodedWindow[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
                 filepoint+=MAX_CODED;
