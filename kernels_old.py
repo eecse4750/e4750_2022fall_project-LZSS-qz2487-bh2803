@@ -99,7 +99,7 @@ kw_kernel_encode = r'''
         {
 
         __shared__ unsigned char searchWindow[WINDOW_SIZE+(MAX_CODED)];
-        __shared__ unsigned char uncodedLookahead[MAX_CODED*2];
+        __shared__ unsigned char uncodedWindow[MAX_CODED*2];
         __shared__ unsigned char encodedBuf[MAX_CODED*2];
         en_str_t matchData;
     
@@ -122,16 +122,16 @@ kw_kernel_encode = r'''
         
         __syncthreads();
 
-        uncodedLookahead[tx] = in_d[bx * PCKTSIZE + tx];
+        uncodedWindow[tx] = in_d[bx * PCKTSIZE + tx];
         filepoint+=MAX_CODED;
         
-        searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
+        searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedWindow[StartPoint_uncoded];
         
         __syncthreads(); 
         
         
 
-        uncodedLookahead[MAX_CODED+tx] = in_d[bx * PCKTSIZE + filepoint + tx];
+        uncodedWindow[MAX_CODED+tx] = in_d[bx * PCKTSIZE + filepoint + tx];
         
         filepoint+=MAX_CODED;
         
@@ -142,7 +142,7 @@ kw_kernel_encode = r'''
         
         loadcounter++;
         // Look for matching string in sliding window //	
-        matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,  tx, 0);
+        matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,  tx, 0);
         __syncthreads();  
         
         //encode the rest of the file
@@ -160,7 +160,7 @@ kw_kernel_encode = r'''
             {
                 matchData.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
-                encodedBuf[tx*2 + 1] = uncodedLookahead[StartPoint_uncoded];
+                encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
             else if(matchData.length > MAX_UNCODED)
             {	//printf("%d\n",matchData.offset);
@@ -186,10 +186,10 @@ kw_kernel_encode = r'''
 
 
             if(filepoint<PCKTSIZE){
-                uncodedLookahead[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
+                uncodedWindow[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
                 filepoint+=MAX_CODED;
                 //find the location for the thread specific view of window
-                searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
+                searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedWindow[StartPoint_uncoded];
              }
 
             else{
@@ -199,7 +199,7 @@ kw_kernel_encode = r'''
             __syncthreads(); 	
                 
             loadcounter++;
-            matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,tx, lastcheck);
+            matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,tx, lastcheck);
             
         } //end while
         
@@ -220,7 +220,7 @@ kw_kernel_encode = r'''
             {
                 matchData.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
-                encodedBuf[tx*2 + 1] = uncodedLookahead[StartPoint_uncoded];
+                encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
             else if(matchData.length > MAX_UNCODED)
             {	
