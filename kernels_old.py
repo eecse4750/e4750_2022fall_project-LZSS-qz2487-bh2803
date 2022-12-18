@@ -31,10 +31,7 @@ kw_matchfunc = r'''
         unsigned char* searchWindow, 
         unsigned char* uncodedLookahead,
         int tx, 
-        int bx, 
-        int wfilepoint, 
-        int lastcheck, 
-        int loadcounter)
+        int lastcheck)
     {
         en_str_t matchData;
         int i, j;
@@ -134,11 +131,10 @@ kw_kernel_encode = r'''
         filepoint+=MAX_CODED;
         
         searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
-        //tex1Dfetch(in_d_tex, bx * PCKTSIZE + tx);//uncodedLookahead[StartPoint_uncoded];
         
         __syncthreads(); 
         
-        //uncodedLookahead[MAX_CODED+tx] = tex1Dfetch(in_d_tex, bx * PCKTSIZE + filepoint + tx); //in_d[bx * PCKTSIZE + filepoint + tx];
+        
 
         uncodedLookahead[MAX_CODED+tx] = in_d[bx * PCKTSIZE + filepoint + tx];
         
@@ -146,11 +142,12 @@ kw_kernel_encode = r'''
         
 
         
+
         __syncthreads();
         
         loadcounter++;
         // Look for matching string in sliding window //	
-        matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,  tx, bx, 0, 0,loadcounter);
+        matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,  tx, 0);
         __syncthreads();  
         
         //encode the rest of the file
@@ -191,14 +188,16 @@ kw_kernel_encode = r'''
             
             __syncthreads(); 	
 
+
+
             {
                 if(filepoint<PCKTSIZE){
                     uncodedLookahead[(StartPoint_uncoded+ MAX_CODED)% (MAX_CODED*2)] = in_d[bx * PCKTSIZE + filepoint + tx];
                     filepoint+=MAX_CODED;
-                    
                     //find the location for the thread specific view of window
                     searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedLookahead[StartPoint_uncoded];
-                    //__syncthreads();                 }
+                 }
+
                 else{
                     lastcheck++;				
                     searchWindow[(StartPoint_win + MAX_CODED ) % (WINDOW_SIZE+MAX_CODED)] = '^';		
@@ -206,11 +205,12 @@ kw_kernel_encode = r'''
                 __syncthreads(); 	
                 
                 loadcounter++;
-                matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,tx,bx, wfilepoint, lastcheck,loadcounter);
+                matchData = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedLookahead,tx, lastcheck);
             }
             
         } //while
         
+
             if(lastcheck==1)
             {
                 if(matchData.length > (MAX_CODED - tx))
@@ -266,16 +266,16 @@ kw_kernel_decode = r'''
         //encodingFLAG = 0x00000000;
         //int tx = threadIdx.x;
         //int bx = blockIdx.x; 
+
         int idx = blockIdx.x*blockDim.x + threadIdx.x;//blockDim : 32*1*1
+
 
         if (in_d[2*idx]==1){
             out_d[idx] = in_d[2*idx+1];
-            
         }
         else{
             out_d[idx] = in_d[2*idx+1];
             out_d[idx+1] = in_d[2*idx];
-
         }            
     }
 '''

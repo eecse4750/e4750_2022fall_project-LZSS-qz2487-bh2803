@@ -32,9 +32,9 @@ class LZSS:
 
         kw_kernel_encode = kernels.kw_kernel_encode
 
-        kw_kernel_decode = kernels.kw_kernel_decode
+        #kw_kernel_decode = kernels.kw_kernel_decode
 
-        self.module_encode = SourceModule(kw_constant+typedef+kw_matchfunc+kw_kernel_encode+kw_kernel_decode)
+        self.module_encode = SourceModule(kw_constant+typedef+kw_matchfunc+kw_kernel_encode)
 
         # If you wish, you can also include additional compiled kernels and compile-time defines that you may use for debugging without modifying the above three compiled kernel.
 
