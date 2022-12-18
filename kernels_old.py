@@ -29,7 +29,7 @@ kw_matchfunc = r'''
         int StartPoint_win, 
         int StartPoint_uncoded, 
         unsigned char* searchWindow, 
-        unsigned char* uncodedLookahead,
+        unsigned char* uncodedWindow,
         int tx, 
         int lastcheck)
     {
@@ -50,7 +50,7 @@ kw_matchfunc = r'''
         int tempi=0;
         while (loop<WINDOW_SIZE)
         {
-            if (searchWindow[i] == uncodedLookahead[(StartPoint_uncoded+j)% (WINDOW_SIZE+MAX_CODED)])
+            if (searchWindow[i] == uncodedWindow[(StartPoint_uncoded+j)% (WINDOW_SIZE+MAX_CODED)])
             {
                 j++;
                 matchingState=1;		
