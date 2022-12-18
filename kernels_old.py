@@ -125,57 +125,48 @@ kw_kernel_encode = r'''
         uncodedWindow[tx] = in_d[bx * PCKTSIZE + tx];
         filepoint+=MAX_CODED;
         
+        //write data to shared memory
         searchWindow[ (StartPoint_win + WINDOW_SIZE ) % (WINDOW_SIZE + MAX_CODED) ] = uncodedWindow[StartPoint_uncoded];
         
         __syncthreads(); 
-        
-        
 
         uncodedWindow[MAX_CODED+tx] = in_d[bx * PCKTSIZE + filepoint + tx];
         
         filepoint+=MAX_CODED;
-        
-
-        
 
         __syncthreads();
         
-        loadcounter++;
-        // Look for matching string in sliding window //	
+        // Look for matching string//	
         matchInfo = FindMatch(StartPoint_win, StartPoint_uncoded,searchWindow,uncodedWindow,  tx, 0);
         __syncthreads();  
         
         //encode the rest of the file
         while ((filepoint) <= PCKTSIZE && !lastcheck)
         {		
-        
-            
-            
             if (matchInfo.length >= MAX_CODED)
                 {
                         matchInfo.length = MAX_CODED-1;
                 }
 
-            if (matchInfo.length <= MAX_UNCODED)
-            {
+            //write ended bytes to encoded memory
+            if (matchInfo.length <= MAX_UNCODED){
                 matchInfo.length = 1;   // set to 1 for 1 byte uncoded //
                 encodedBuf[tx*2] = 1;
                 encodedBuf[tx*2 + 1] = uncodedWindow[StartPoint_uncoded];
             }
-            else if(matchInfo.length > MAX_UNCODED)
-            {	//printf("%d\n",matchInfo.offset);
+            else if(matchInfo.length > MAX_UNCODED){
                 encodedBuf[tx*2] = (unsigned char)matchInfo.length;
                 
                 encodedBuf[tx*2+1] = (unsigned char)matchInfo.offset;			
             }
 
                 
-            //write out the encoded data into output
+
+            //write the encoded data into output
             out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
             out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
             
             
-            //update written pointer and heads
             wfilepoint = wfilepoint + MAX_CODED*2;
             
             StartPoint_win = (StartPoint_win + MAX_CODED) % (WINDOW_SIZE+MAX_CODED);
@@ -228,8 +219,6 @@ kw_kernel_encode = r'''
                 encodedBuf[tx*2+1] = (unsigned char)matchInfo.offset;			
             }
 
-                
-            //write out the encoded data into output
 
             out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2] = encodedBuf[tx*2];
             out_d[bx * PCKTSIZE*2 + wfilepoint + tx*2 + 1] = encodedBuf[tx*2+1];
